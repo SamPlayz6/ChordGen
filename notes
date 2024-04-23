@@ -3,5 +3,12 @@ Planning Thoughts:
 Audio to MIDI -> https://github.com/tiagoft/audio_to_midi
 Librosa (Maybe) -> https://librosa.org/doc/main/generated/librosa.midi_to_note.html
 
+Generating Data:
+Could sing lots of melodies. Generate alot of melody data.
+After this then personally create chords for each melody. 
+  -> Would produce a small dataset. Even if I put in a lot of work.
+  -> Look into what dataset the BeatBoxing model used
+
 Interesting Existing Related Transformers:
 https://ieeexplore.ieee.org/abstract/document/9376975
+https://github.com/ckycky3/CMT-pytorch/blob/master/README.md
