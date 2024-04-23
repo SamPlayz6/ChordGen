@@ -3,4 +3,5 @@ Planning Thoughts:
 Audio to MIDI -> https://github.com/tiagoft/audio_to_midi
 Librosa (Maybe) -> https://librosa.org/doc/main/generated/librosa.midi_to_note.html
 
-
+Interesting Existing Related Transformers:
+https://ieeexplore.ieee.org/abstract/document/9376975
