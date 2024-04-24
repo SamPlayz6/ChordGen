@@ -9,6 +9,14 @@ After this then personally create chords for each melody.
   -> Would produce a small dataset. Even if I put in a lot of work.
   -> Look into what dataset the BeatBoxing model used
 
+Possible Datasets:
+https://gist.github.com/alexanderlerch/e3516bffc08ea77b429c419051ab793a
+https://github.com/shiehn/chord-melody-dataset
+
+-> https://github.com/jukedeck/nottingham-dataset
+-> http://ddmal.music.mcgill.ca/research/salami/annotations
+-> http://marg.snu.ac.kr/chord_generation/
+
 Interesting Existing Related Transformers:
 https://ieeexplore.ieee.org/abstract/document/9376975
 https://github.com/ckycky3/CMT-pytorch/blob/master/README.md
