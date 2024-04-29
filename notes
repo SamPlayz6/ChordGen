@@ -1,6 +1,7 @@
 Planning Thoughts:
 
 Audio to MIDI -> https://github.com/tiagoft/audio_to_midi
+              -> https://pypi.org/project/audio-to-midi/
 Librosa (Maybe) -> https://librosa.org/doc/main/generated/librosa.midi_to_note.html
 
 Generating Data:
