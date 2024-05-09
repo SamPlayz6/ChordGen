@@ -55,6 +55,23 @@ def encode_melody_and_chords(melody, chords):
     
     return melody_encoded, chords_encoded
 
+def one_hot_encode(melody, chords):
+    # Flatten the chords list and get unique notes
+    unique_notes = list(set(melody + [note for chord in chords for note in chord]))
+    note_to_int = {note: i for i, note in enumerate(unique_notes)}
+    
+    # Encode the melody
+    melody_encoded = [note_to_int[note] for note in melody]
+    
+    # One-hot encode the melody
+    melody_one_hot = torch.nn.functional.one_hot(torch.tensor(melody_encoded), num_classes=len(unique_notes))
+    
+    # Encode and one-hot encode the chords
+    chords_encoded = [[note_to_int[note] for note in chord] for chord in chords]
+    chords_one_hot = [torch.nn.functional.one_hot(torch.tensor(chord), num_classes=len(unique_notes)) for chord in chords_encoded]
+    
+    return melody_one_hot, chords_one_hot
+
 
 
 def extract_melody_and_chords(pm):
