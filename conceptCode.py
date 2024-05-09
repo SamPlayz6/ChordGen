@@ -43,14 +43,16 @@ def transpose_to_c_major(pm):
     return pm
 
 def encode_melody_and_chords(melody, chords):
-    unique_notes = list(set(melody))
+    # Flatten the chords list and get unique notes
+    unique_notes = list(set(melody + [note for chord in chords for note in chord]))
     note_to_int = {note: i for i, note in enumerate(unique_notes)}
+    
+    # Encode the melody
     melody_encoded = [note_to_int[note] for note in melody]
-
-    unique_chords = list(set(chords))
-    chord_to_int = {chord: i for i, chord in enumerate(unique_chords)}
-    chords_encoded = [chord_to_int[chord] for chord in chords]
-
+    
+    # Encode the chords
+    chords_encoded = [[note_to_int[note] for note in chord] for chord in chords]
+    
     return melody_encoded, chords_encoded
 
 
