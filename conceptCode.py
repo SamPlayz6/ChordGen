@@ -67,14 +67,14 @@ def extract_melody_and_chords(pm):
                 melody.append(instrument.notes[i].pitch)
                 if i > 0:
                     # Append the previous chord to the chords list
-                    chords.append([note.pitch for note in instrument.notes[i - 1::-1] if note.end > instrument.notes[i - 1].start]
+                    chords.append([note.pitch for note in instrument.notes[i - 1::-1] if note.end > instrument.notes[i - 1].start])
 
                 else:
-                # This note is part of the current chord
-                instrument.notes[i - 1].end = max(instrument.notes[i - 1].end, instrument.notes[i].end)
-        # Append the last chord to the chords list
-        chords.append([note.pitch for note in instrument.notes[::-1] if note.end > instrument.notes[-1].start])
-    return melody, chords
+                    # This note is part of the current chord
+                    instrument.notes[i - 1].end = max(instrument.notes[i - 1].end, instrument.notes[i].end)
+            # Append the last chord to the chords list
+            chords.append([note.pitch for note in instrument.notes[::-1] if note.end > instrument.notes[-1].start])
+        return melody, chords
 
 
 
