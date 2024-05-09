@@ -25,5 +25,6 @@ https://github.com/ckycky3/CMT-pytorch/blob/master/README.md
 
 
 ----------
-GPT Suggestions:
+DATA BEING USED:
 Chord-Melody-Dataset on GitHub - Between chords and melodies - https://github.com/shiehn/chord-melody-dataset
+Currently using dataset - https://colinraffel.com/projects/lmd/
