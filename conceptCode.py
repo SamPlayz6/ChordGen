@@ -28,6 +28,7 @@ plt.show()
 import os
 import pretty_midi
 import numpy as np
+import torch
 
 
 def transpose_to_c_major(pm):
