@@ -29,17 +29,6 @@ import os
 import pretty_midi
 import numpy as np
 
-def extract_melody_and_chords(pm):
-    melody = []
-    chords = []
-    for instrument in pm.instruments:
-        if instrument.is_drum:
-            continue
-        for note in instrument.notes:
-            melody.append(note.pitch)
-            chords.append(pretty_midi.note_number_to_name(note.pitch))
-    return melody, chords
-
 
 def transpose_to_c_major(pm):
     key = pm.key_signature_changes
@@ -63,6 +52,31 @@ def encode_melody_and_chords(melody, chords):
     chords_encoded = [chord_to_int[chord] for chord in chords]
 
     return melody_encoded, chords_encoded
+
+
+
+def extract_melody_and_chords(pm):
+    melody = []
+    chords = []
+    for instrument in pm.instruments:
+        # Sort the notes by their start time
+        instrument.notes.sort(key=lambda note: note.start)
+        for i in range(len(instrument.notes)):
+            if i == 0 or instrument.notes[i].start > instrument.notes[i - 1].end:
+                # This note starts a new chord
+                melody.append(instrument.notes[i].pitch)
+                if i > 0:
+                    # Append the previous chord to the chords list
+                    chords.append([note.pitch for note in instrument.notes[i - 1::-1] if note.end > instrument.notes[i - 1].start]
+
+                else:
+                # This note is part of the current chord
+                instrument.notes[i - 1].end = max(instrument.notes[i - 1].end, instrument.notes[i].end)
+        # Append the last chord to the chords list
+        chords.append([note.pitch for note in instrument.notes[::-1] if note.end > instrument.notes[-1].start])
+    return melody, chords
+
+
 
 
 # Directory where the Lakh MIDI dataset is stored
