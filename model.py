@@ -46,8 +46,8 @@ class MelodyChordDataset(Dataset):
         return melody, chord[-1]  # Return only the last chord for sequence-to-one prediction
 
 # Read the saved CSV files
-melodies = read_from_csv('data/melodies.csv')
-chords = read_from_csv('data/chords.csv')
+melodies = read_from_csv('dataV2/melodies.csv')
+chords = read_from_csv('dataV2/chords.csv')
 
 # Flatten the nested lists
 flat_melodies = [item for sublist in melodies for item in sublist]
