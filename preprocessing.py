@@ -1,4 +1,5 @@
 import os
+import csv
 import xml.etree.ElementTree as ET
 import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
@@ -8,28 +9,26 @@ def parse_xml_file(filepath):
     tree = ET.parse(filepath)
     root = tree.getroot()
 
-    namespace = {'score': 'http://www.musicxml.org/dtds/partwise.dtd'}
-
     melodies = []
     chords = []
 
-    for part in root.findall('score:part', namespace):
-        for measure in part.findall('score:measure', namespace):
-            for note in measure.findall('score:note', namespace):
-                pitch = note.find('score:pitch', namespace)
+    for part in root.findall('part'):
+        for measure in part.findall('measure'):
+            for note in measure.findall('note'):
+                pitch = note.find('pitch')
                 if pitch is not None:
-                    step = pitch.find('score:step', namespace).text
-                    octave = pitch.find('score:octave', namespace).text
-                    alter = pitch.find('score:alter', namespace)
+                    step = pitch.find('step').text
+                    octave = pitch.find('octave').text
+                    alter = pitch.find('alter')
                     alter = alter.text if alter is not None else '0'
                     melodies.append(f"{step}{alter}/{octave}")
             
-            for harmony in measure.findall('score:harmony', namespace):
-                root = harmony.find('score:root', namespace)
-                kind = harmony.find('score:kind', namespace)
+            for harmony in measure.findall('harmony'):
+                root = harmony.find('root')
+                kind = harmony.find('kind')
                 if root is not None and kind is not None:
-                    root_step = root.find('score:root-step', namespace).text
-                    root_alter = root.find('score:root-alter', namespace)
+                    root_step = root.find('root-step').text
+                    root_alter = root.find('root-alter')
                     root_alter = root_alter.text if root_alter is not None else '0'
                     chords.append(f"{root_step}{root_alter}/{kind.text}")
 
@@ -44,23 +43,36 @@ def load_and_preprocess_data(dataset_directory):
         for file in files:
             if file.endswith('.xml'):
                 filepath = os.path.join(subdir, file)
+                
+                # Debugging file processing
+                print(f"Processing file: {filepath}")  # Debug statement
+                
                 melodies, chords = parse_xml_file(filepath)
-                all_melodies.append(melodies)
-                all_chords.append(chords)
+                
+                # Debugging data extraction
+                print(f"Extracted {len(melodies)} melodies and {len(chords)} chords")  # Debug statement
+                
+                if melodies:  # Only add non-empty lists
+                    all_melodies.append(melodies)
+                if chords:  # Only add non-empty lists
+                    all_chords.append(chords)
 
     return all_melodies, all_chords
 
+
+# Save data to CSV
+def save_to_csv(data, filename):
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(data)
+
+    print(f"Saved {len(data)} records to {filename}")  # Debug statement
+
 # Example dataset directory
-dataset_directory = 'path_to_your_chord_melody_dataset'
+dataset_directory = 'c:\\Users\\user\\Documents\\GitHub\\ChordGen\\chord-melody-dataset-master'
 melodies, chords = load_and_preprocess_data(dataset_directory)
 
-# Function to prepare the dataset for PyTorch
-def prepare_dataset(melodies, chords):
-    # Assuming a dummy function to convert lists to tensors - replace with actual preprocessing
-    melody_tensor = torch.tensor([list(map(ord, melody)) for melody in melodies], dtype=torch.long)
-    chord_tensor = torch.tensor([list(map(ord, chord)) for chord in chords], dtype=torch.long)
-    dataset = TensorDataset(melody_tensor, chord_tensor)
-    return dataset
-
-dataset = prepare_dataset(melodies, chords)
-
+# Save melodies and chords to CSV files
+save_to_csv(melodies, 'data/melodies.csv')
+save_to_csv(chords, 'data/chords.csv')
