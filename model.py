@@ -46,8 +46,8 @@ class MelodyChordDataset(Dataset):
         return melody, chord[-1]  # Return only the last chord for sequence-to-one prediction
 
 # Read the saved CSV files
-melodies = read_from_csv('dataV2/melodies.csv')
-chords = read_from_csv('dataV2/chords.csv')
+melodies = read_from_csv('data/melodies.csv') #Here I can select small or big dataset
+chords = read_from_csv('data/chords.csv')
 
 # Flatten the nested lists
 flat_melodies = [item for sublist in melodies for item in sublist]
@@ -135,7 +135,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 embedding_dim = 128  # Dimension of the embedding layer
 hidden_size = 256  # Number of LSTM units
 output_size = len(chord_token_to_id) + 1  # Size of chord vocabulary
-num_layers = 4  # Number of LSTM layers
+num_layers = 3  # Number of LSTM layers
 dropout = 0.5  # Dropout rate
 num_epochs = 15  # Number of epochs
 learning_rate = 0.0005  # Learning rate
