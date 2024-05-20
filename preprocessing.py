@@ -129,5 +129,5 @@ combined_melodies = melodies + augmented_melodies
 combined_chords = chords + augmented_chords
 
 # Save combined data to new CSV files
-save_to_csv(combined_melodies, 'dataV2/melodies.csv')
-save_to_csv(combined_chords, 'dataV2/chords.csv')
+save_to_csv(melodies, 'data/melodies.csv')
+save_to_csv(chords, 'data/chords.csv')
