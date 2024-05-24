@@ -1,12 +1,11 @@
 import argparse
+import json
 import os
 import csv
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset, random_split
 import numpy as np
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Helper functions
 def read_from_csv(filename):
@@ -31,7 +30,6 @@ def create_tokenizer(data):
     token_to_id['UNK'] = len(token_to_id) + 1
     return lambda seq: [token_to_id.get(token, token_to_id['UNK']) for token in seq], token_to_id
 
-# Custom PyTorch Dataset
 class MelodyChordDataset(Dataset):
     def __init__(self, melodies, chords):
         self.melodies = melodies
@@ -45,7 +43,6 @@ class MelodyChordDataset(Dataset):
         chord = torch.tensor(self.chords[idx], dtype=torch.long)
         return melody, chord[-1]
 
-# LSTM Model
 class LSTMModel(nn.Module):
     def __init__(self, input_size, embedding_dim, hidden_size, output_size, num_layers=1, dropout=0.2):
         super(LSTMModel, self).__init__()
@@ -63,7 +60,7 @@ class LSTMModel(nn.Module):
         out = self.fc(out[:, -1, :])
         return out
 
-def train_model(model, train_loader, val_loader, num_epochs, learning_rate):
+def train_model(model, train_loader, val_loader, num_epochs, learning_rate, device):
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     for epoch in range(num_epochs):
@@ -96,16 +93,28 @@ def load_model(path, input_size, embedding_dim, hidden_size, output_size, num_la
     model.eval()
     return model
 
-def predict(model, tokenizer, input_sequence, max_len):
+def predict(model, tokenizer, input_sequence, max_len, chord_token_to_id):
     tokenized_input = tokenize_and_pad([input_sequence], tokenizer, max_len)
-    input_tensor = torch.tensor(tokenized_input, dtype=torch.long).to(device)
+    input_tensor = torch.tensor(tokenized_input, dtype=torch.long).to(next(model.parameters()).device)
     with torch.no_grad():
         output = model(input_tensor)
         predicted_index = output.argmax(1).item()
     id_to_token = {v: k for k, v in chord_token_to_id.items()}
     return id_to_token[predicted_index]
 
+def save_configurations(path, input_size, chord_token_to_id):
+    with open(path, 'w') as f:
+        json.dump({'input_size': input_size, 'chord_token_to_id': chord_token_to_id}, f)
+
+def load_configurations(path):
+    with open(path, 'r') as f:
+        config = json.load(f)
+    return config['input_size'], {int(k): v for k, v in config['chord_token_to_id'].items()}
+
 def main(args):
+    config_path = 'model_config.json'  # Path to save configuration
+    save_model_path = 'Example/lstm_model.pth'  # Path to save the model
+    
     if args.mode == 'train':
         print("Starting training...")
         melodies = read_from_csv('data/melodies.csv')
@@ -126,14 +135,21 @@ def main(args):
         val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model = LSTMModel(input_size, 128, 256, len(chord_token_to_id) + 1, 3, 0.5).to(device)
-        train_model(model, train_loader, val_loader, 15, 0.0005)
-        save_model_path = 'Example/lstm_model.pth'
+        train_model(model, train_loader, val_loader, 15, 0.0005, device)
         save_model(model, save_model_path)
+        
+        # Save the configuration
+        save_configurations(config_path, input_size, chord_token_to_id)
+
     elif args.mode == 'inference':
         print("Starting inference...")
+        
+        # Load the configuration
+        input_size, chord_token_to_id = load_configurations(config_path)
+        
         loaded_model = load_model(save_model_path, input_size, 128, 256, len(chord_token_to_id) + 1, 3, 0.5)
         example_input_sequence = "A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,A0/5,A0/5,F1/5,G0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5,C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5"
-        predicted_chord = predict(loaded_model, melody_tokenizer, example_input_sequence, max_len)
+        predicted_chord = predict(loaded_model, melody_tokenizer, example_input_sequence, max_len, chord_token_to_id)
         print("Predicted Chord:", predicted_chord)
 
 if __name__ == "__main__":
