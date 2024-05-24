@@ -5,6 +5,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset, random_split
 import numpy as np
 
+
+print("Starting training...")
 # Function to read data from a CSV file
 def read_from_csv(filename):
     data = []
@@ -128,6 +130,10 @@ def train_model(model, train_loader, val_loader, num_epochs=10, learning_rate=0.
 
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}, Val Loss: {val_loss/len(val_loader):.4f}')
 
+
+def save_model(model, path):
+    torch.save(model.state_dict(), path)
+
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -143,3 +149,7 @@ learning_rate = 0.0005  # Learning rate
 # Initialize the model, move to device and start training
 model = LSTMModel(input_size, embedding_dim, hidden_size, output_size, num_layers, dropout).to(device)
 train_model(model, train_loader, val_loader, num_epochs, learning_rate)
+
+# Save the model after training
+save_model_path = 'Example/lstm_model.pth'
+save_model(model, save_model_path)
