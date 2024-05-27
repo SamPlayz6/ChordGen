@@ -112,7 +112,7 @@ def load_configurations(path):
     return config['input_size'], {int(k): v for k, v in config['chord_token_to_id'].items()}
 
 def main(args):
-    config_path = 'model_config.json'  # Path to save configuration
+    config_path = 'Example/model_config.json'  # Path to save configuration
     save_model_path = 'Example/lstm_model.pth'  # Path to save the model
     
     if args.mode == 'train':
@@ -154,6 +154,6 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train or run inference on an LSTM model.')
-    parser.add_argument('mode', choices=['train', 'inference'], help='Select mode to either "train" or run "inference"')
+    parser.add_argument('train', choices=['train', 'inference'], help='Select mode to either "train" or run "inference"')
     args = parser.parse_args()
     main(args)

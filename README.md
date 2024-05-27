@@ -13,3 +13,8 @@ If you wish to use the pretrained script or after you have trained your own mode
 ```
 python model.py inference
 ```
+
+---
+
+### Dependancies
+*List all libraries
