@@ -154,6 +154,6 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train or run inference on an LSTM model.')
-    parser.add_argument('train', choices=['train', 'inference'], help='Select mode to either "train" or run "inference"')
+    parser.add_argument('mode', choices=['train', 'inference'], help='Select mode to either "train" or run "inference"')
     args = parser.parse_args()
     main(args)
