@@ -1,49 +1,37 @@
-import librosa
-import aubio
+import crepe
+import scipy.io.wavfile
+import matplotlib.pyplot as plt
 import numpy as np
 
-def wav_to_midi_notes(filename, buffer_size=2048, hop_size=512):
+import os
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
+def analyze_pitch(filename):
     # Load the audio file
-    data, sample_rate = librosa.load(filename, sr=None)
+    sr, audio = scipy.io.wavfile.read(filename)
+    if audio.ndim > 1:  # Convert stereo to mono if necessary
+        audio = audio.mean(axis=1)
 
-    # Setup for pitch detection
-    p_detect = aubio.pitch("default", buffer_size, hop_size, sample_rate)
-    p_detect.set_unit("Hz")
-    p_detect.set_silence(-40)
+    # Run CREPE on the audio file
+    time, frequency, confidence, activation = crepe.predict(audio, sr, viterbi=True)
 
-    pitches = []
-    confidences = []
+    # Filter out low-confidence detections
+    mask = confidence > 0.7
+    time, frequency = time[mask], frequency[mask]
 
-    print(pitches)
+    return time, frequency, confidence
 
-    # Buffer processing
-    for i in range(0, len(data), hop_size):
-        samples = data[i:i+hop_size]
-        if len(samples) < hop_size:
-            samples = np.pad(samples, (0, hop_size - len(samples)), 'constant', constant_values=(0.0, 0.0))
-        pitch = p_detect(samples)[0]
-        confidence = p_detect.get_confidence()
-        if confidence > 0.8:  # This threshold can be adjusted
-            pitches.append(pitch)
-            confidences.append(confidence)
+def plot_pitch(time, frequency):
+    plt.figure(figsize=(10, 4))
+    plt.plot(time, frequency, label="Pitch")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Frequency (Hz)")
+    plt.title("Pitch Detection using CREPE")
+    plt.legend()
+    plt.show()
 
-    # Convert frequency to musical notes
-    notes = [librosa.hz_to_note(pitch) for pitch in pitches if pitch > 0]
-    return notes
-
-def notes_to_input_sequence(notes):
-    # Here you would convert notes to your desired format, e.g., "A0/5"
-    # Placeholder: direct conversion, adapt this based on your specific needs
-    input_sequence = ','.join(notes)
-    return input_sequence
-
-def process_wav_file(filename):
-    notes = wav_to_midi_notes(filename)
-    input_sequence = notes_to_input_sequence(notes)
-    return input_sequence
-
-# Usage
 if __name__ == "__main__":
     filename = "SungMelodies/M1.wav"
-    input_sequence = process_wav_file(filename)
-    print("Generated Input Sequence:", input_sequence)
+    time, frequency, confidence = analyze_pitch(filename)
+    plot_pitch(time, frequency)
