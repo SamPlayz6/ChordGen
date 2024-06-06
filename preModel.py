@@ -17,9 +17,6 @@ def midi_to_note_string(midi_file, ticks_per_beat=480):
     current_time = 0
     note_string = []
 
-    # print("Hi")
-    # print(note_events, " _ ", note_string)
-
     for track in midi.tracks:
         for msg in track:
             if msg.type == 'note_on' and msg.velocity > 0:
@@ -43,7 +40,6 @@ if __name__ == "__main__":
 
 
     # Converting Melody MIDI to Melody String Sequence
-    # midi_file = "SungMelodies/Inputs/melody.mid"
-    midi_file = "C:\\Users\\samdd\\Desktop\\ChordGen\\ChordGen\\SungMelodies\\Inputs"
+    midi_file = "SungMelodies/Inputs/melody.mid"
     note_string = midi_to_note_string(midi_file)
     print(note_string)
