@@ -37,65 +37,76 @@ def add_measures(midi_stream):
 #------------------ String to MIDI---------------------------
 
 
-def chord_notes(root, quality):
-    """ Generate the correct notes for a given chord root and quality. """
-    notes = []
-    if quality == 'major':
-        notes = [root + '3', root + '5', root + '8']  # Simple major triad
-    elif quality == 'minor':
-        notes = [root + 'b3', root + '5', root + '8']  # Minor triad
-    elif quality == 'dominant':
-        notes = [root + '3', root + '5', root + 'b7']  # Dominant seventh
-    elif quality == 'major-seventh':
-        notes = [root + '3', root + '5', root + '7']  # Major seventh
-    elif quality == 'minor-seventh':
-        notes = [root + 'b3', root + '5', root + 'b7']  # Minor seventh
-    return notes
+from music21 import note, chord
 
-def add_measures(midi_stream):
-    """ Ensures every note or rest in the stream is within a measure structure. """
-    if not midi_stream.getElementsByClass('Measure'):
-        # If no measures, wrap all elements in one measure
-        new_stream = stream.Measure()
-        for el in midi_stream.notesAndRests:
-            new_stream.append(el)
-        midi_stream = stream.Part()
-        midi_stream.append(new_stream)
-    midi_stream.makeMeasures(inPlace=True)  # This will now work because everything is wrapped in a Measure
-    return midi_stream
+def chord_notes(root, quality):
+    """ Generate the correct notes for a given chord root and quality with default velocity. """
+    notes = []
+    velocity = 64  # A sensible default velocity for audible notes
+    # Define each chord type with appropriate intervals and ensure the velocity is set
+    if quality == 'major':
+        notes = [note.Note(root+'3', volume=velocity), 
+                 note.Note(root+'5', volume=velocity), 
+                 note.Note(root+'8', volume=velocity)]
+    elif quality == 'minor':
+        notes = [note.Note(root+'b3', volume=velocity), 
+                 note.Note(root+'5', volume=velocity), 
+                 note.Note(root+'8', volume=velocity)]
+    elif quality == 'dominant':
+        notes = [note.Note(root+'3', volume=velocity), 
+                 note.Note(root+'5', volume=velocity), 
+                 note.Note(root+'b7', volume=velocity)]
+    elif quality == 'major-seventh':
+        notes = [note.Note(root+'3', volume=velocity), 
+                 note.Note(root+'5', volume=velocity), 
+                 note.Note(root+'7', volume=velocity)]
+    elif quality == 'minor-seventh':
+        notes = [note.Note(root+'b3', volume=velocity), 
+                 note.Note(root+'5', volume=velocity), 
+                 note.Note(root+'b7', volume=velocity)]
+    return chord.Chord(notes)
+
+
+
+
+from music21 import stream, midi, converter, meter
 
 def add_chords_to_midi(chord_string, timings, melody_file, output_file):
     melody_stream = converter.parse(melody_file)
-    # Ensure that melody_stream is properly measured
-    melody_measures = add_measures(melody_stream)
-
+    total_duration = melody_stream.duration.quarterLength  # Get total length of the melody in quarter lengths
+    
     chords_part = stream.Part()
+    time_signature = melody_stream.recurse().getElementsByClass(meter.TimeSignature)[0]
+    chords_part.append(time_signature)  # Copy time signature from melody
+
     chord_entries = chord_string.split(',')
     for idx, chord_entry in enumerate(chord_entries):
         root, quality = chord_entry.split('/')
-        chord_notes_list = chord_notes(root, quality)
-        new_chord = chord.Chord(chord_notes_list, quarterLength=4)
-        new_chord.offset = timings[idx]  # Directly use timings without scaling
+        new_chord = chord_notes(root, quality)
+        new_chord.duration.quarterLength = 4  # Adjust duration as needed
+        scaled_timing = (timings[idx] / max(timings)) * total_duration
+        new_chord.offset = scaled_timing  # Set offset based on scaled timing
         chords_part.append(new_chord)
 
-    chords_measured = add_measures(chords_part)
     combined_stream = stream.Score()
-    combined_stream.append(melody_measures)
-    combined_stream.append(chords_measured)
+    combined_stream.append(melody_stream.parts[0])  # Assuming melody is single-part
+    combined_stream.append(chords_part)
 
-    # Now ensure the combined_stream does not need expandRepeats or contains valid measures
     midi_file = midi.translate.streamToMidiFile(combined_stream)
     midi_file.open(output_file, 'wb')
     midi_file.write()
     midi_file.close()
     print(f"Combined MIDI file '{output_file}' has been saved.")
 
+# Example usage
 if __name__ == "__main__":
     chord_string = "C4/major,G4/minor,C4/major-seventh,A4/minor-seventh"
-    timings = [0, 2, 4, 6]
-    melody_file = "SungMelodies/Inputs/melody.mid"
-    output_file = "SungMelodies/Outputs/combined_output.mid"
-    add_chords_to_midi(chord_string, timings, melody_file, output_file)
+    timings = [0, 2, 4, 6]  # Example timings
+    melody_file_path = "SungMelodies/Inputs/melody.mid"
+    output_file_path = "SungMelodies/Outputs/chords.mid"
+    add_chords_to_midi(chord_string, timings, melody_file_path, output_file_path)
+
+
 
     # # Combining the Melody and Chord MIDIs
     # chords_file = "SungMelodies/Outputs/chords.mid"
