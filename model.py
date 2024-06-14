@@ -179,13 +179,13 @@ def main(args):
     val_loader = DataLoader(dataset, batch_size=32)  # Placeholder for actual validation data
 
     model = Seq2Seq(
-        Encoder(input_dim=len(token_to_id_melody), emb_dim=256, hid_dim=512, n_layers=2, dropout=0.5),
-        Decoder(output_dim=len(token_to_id_chord), emb_dim=256, hid_dim=512, n_layers=2, dropout=0.5),
+        Encoder(input_dim=len(token_to_id_melody), emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5), # training model parameters
+        Decoder(output_dim=len(token_to_id_chord), emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5), # Training model parameters
         device
     ).to(device)
 
     if args.mode == 'train':
-        train_model(model, train_loader, val_loader, 10, 0.001, device)  # 10 epochs and learning rate of 0.001
+        train_model(model, train_loader, val_loader, 2, 0.01, device)  # 10 epochs and learning rate of 0.001
         torch.save(model.state_dict(), 'model.pth')
     elif args.mode == 'inference':
         model.load_state_dict(torch.load('model.pth'))
