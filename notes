@@ -28,3 +28,17 @@ https://github.com/ckycky3/CMT-pytorch/blob/master/README.md
 DATA BEING USED:
 Chord-Melody-Dataset on GitHub - Between chords and melodies - https://github.com/shiehn/chord-melody-dataset
 Currently using dataset - https://colinraffel.com/projects/lmd/
+
+
+
+
+
+-----------------------------------------
+Questions:
+  - How does the inference asepct work where I want to get an output of a string of chords, assuming some input?
+  - Setup Parameters together in the code. What influence does each paramter have on the model?
+  - 
+
+
+  - Do you know of any Audio to MIDI converters in python?
+  - 

@@ -139,6 +139,7 @@ def train_model(model, train_loader, val_loader, num_epochs, learning_rate, devi
         print(f'Epoch {epoch+1}: Train Loss: {train_loss / len(train_loader):.4f}, '
               f'Train Acc: {train_acc:.2f}%, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%')
 
+#Computes the validation loss and accuracy
 def evaluate(model, val_loader, criterion, device):
     model.eval()
     val_loss = 0

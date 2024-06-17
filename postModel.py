@@ -34,7 +34,7 @@ def add_measures(midi_stream):
     return measures
 
 
-#------------------ String to MIDI---------------------------
+#------------------ String to MIDI---------------------
 
 
 from music21 import note, chord
