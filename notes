@@ -34,11 +34,38 @@ Currently using dataset - https://colinraffel.com/projects/lmd/
 
 
 -----------------------------------------
-Questions:
-  - How does the inference asepct work where I want to get an output of a string of chords, assuming some input?
-  - Setup Parameters together in the code. What influence does each paramter have on the model?
-  - 
+To ask:
+
+Go through ChordGen ideas flow. -> (Two problems: Audio to MIDI, MIDI Join)
+Go through the model technical details
+
+Show functionality and where it is going wrong -> Inference - On small dataset
+
+--
+
+ICHEC Application?
+	- Quality of Abstract - How much?
+	- What is an Application Case Document?
+	- How to pick CPU Node Hours & GPU Node Hours & Large Memory Node Hours?
 
 
-  - Do you know of any Audio to MIDI converters in python?
-  - 
+Post Luke Kelly Talk:
+
+2500 Hours - Quick turn aorund time (Lukes Request)
+
+Sam Request
+1000 CPU Hours -> I should request
+1000 GPU Hours -> I should request
+
+
+MODEL: 
+Things to change/Imagine:
+  - Change the model so that padding is gone. Instead imagine it as one long time series. Where it learns to optimize that series of data
+  - Change the training examples so no padding is added, this however means length can vary.
+  - Change the model so it has padding but learns the weight of padding is 0 & cannot output in Inference.
+
+
+Possible model detail changes:
+  Change # Hidden Layers
+  Change the optimization function (Something less central)
+  Change the criterian function (The validation loss function checker)

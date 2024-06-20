@@ -107,7 +107,7 @@ class Seq2Seq(nn.Module):
         return outputs
 
 def train_model(model, train_loader, val_loader, num_epochs, learning_rate, device):
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss() # Defines the criteria to check the effect of the predicted result
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     model.to(device)
 
@@ -188,9 +188,9 @@ def main(args):
 
     if args.mode == 'train':
         train_model(model, train_loader, val_loader, 2, 0.01, device)  # 10 epochs and learning rate of 0.001
-        torch.save(model.state_dict(), 'model.pth')
+        torch.save(model.state_dict(), 'Example/model.pth')
     elif args.mode == 'inference':
-        model.load_state_dict(torch.load('model.pth'))
+        model.load_state_dict(torch.load('Example/model.pth'))
         input_sequence = "C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,A0/5,A0/5,F1/5,G0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5"
         predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_melody, device)
         print(len(predicted_chords), " :Predicted Chords:", predicted_chords)

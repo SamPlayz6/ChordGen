@@ -1,6 +1,8 @@
 from music21 import converter
 from mido import MidiFile
 
+#--------------------XML to MIDI-------------------
+
 def convert_xml_to_midi(xml_file_path, midi_file_path):
     # Load the MusicXML file
     score = converter.parse(xml_file_path)
@@ -10,6 +12,8 @@ def convert_xml_to_midi(xml_file_path, midi_file_path):
     print(f"MIDI file saved as {midi_file_path}")
 
 
+
+#--------------MIDI to String(Of notes)-------------
 
 def midi_to_note_string(midi_file, ticks_per_beat=480):
     midi = MidiFile(midi_file)
