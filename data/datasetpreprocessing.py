@@ -123,44 +123,61 @@ def augment_symbolic_data(melodies, chords):
 import csv
 
 def read_csv_to_string(filename):
-    """ Read a CSV file and convert contents to a single string. """
+    """ Read a CSV file and convert contents to a list of strings, each representing one line of the file. """
+    data = []
     with open(filename, 'r', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
-        data = [row for row in reader]
+        for row in reader:
+            joined_row = ','.join(row)
+            data.append(joined_row)
+            # print(f"Read line: {joined_row}")  # Debug print each read line
     return data
 
-def expand_chords(chords_data, notes_count):
+def expand_chords(chords_data, notes_count_per_line):
     """ Repeat each chord to match the length of the notes data. """
-    total_chords = sum(len(line) for line in chords_data)
-    repeats_per_chord = notes_count // total_chords
-    extra = notes_count % total_chords
+    expanded_chords_lines = []
+    for line_index, (line, notes_count) in enumerate(zip(chords_data, notes_count_per_line)):
+        chords = line.split(',')
+        total_chords = len(chords)
+        repeats_per_chord = notes_count // total_chords
+        extra = notes_count % total_chords
 
-    expanded_chords = []
-    for line in chords_data:
-        for chord in line:
+        expanded_chords = []
+        for chord in chords:
             expanded_chords.extend([chord] * repeats_per_chord)
             if extra > 0:
                 expanded_chords.append(chord)
                 extra -= 1
 
-    return ','.join(expanded_chords)  # Joining with commas for CSV format
+        expanded_line = ','.join(expanded_chords)
+        expanded_chords_lines.append(expanded_line)
+        print(f"Processed line {line_index + 1}/{len(chords_data)}: Expanded to {len(expanded_chords)} chords")
+
+    return expanded_chords_lines
 
 def process_chords(melodies, chords, expandedChords):
+    print("Starting to read melody data...")
     melody_data = read_csv_to_string(melodies)
+    print("Starting to read chord data...")
     chords_data = read_csv_to_string(chords)
 
-    # Flatten the melody_data to calculate the total number of notes
-    flat_melody_data = [item for sublist in melody_data for item in sublist]
-    notes_count = len(flat_melody_data)
+    # Calculate the number of notes in each line of the melody data
+    notes_count_per_line = [len(line.split(',')) for line in melody_data]
+    print(f"Total notes per line: {notes_count_per_line}")
 
-    expanded_chords = expand_chords(chords_data, notes_count).split(',')  # Splitting into a list
+    expanded_chords_lines = expand_chords(chords_data, notes_count_per_line)
 
+    print("Writing expanded chords to new file...")
     with open(expandedChords, 'w', newline='', encoding='utf-8') as f:
-        csv_writer = csv.writer(f)
-        csv_writer.writerow(expanded_chords)  # Writing as separate fields
+        for expanded_line in expanded_chords_lines:
+            f.write(expanded_line + '\n')
+            # print(f"Wrote expanded line to file: {expanded_line}")
 
 # Example usage - 'path_to_notes.csv', 'path_to_chords.csv', 'output_chords.csv'
 process_chords('data/melodies.csv', 'data/chords.csv', 'data/expandedChords.csv')
+
+
+
 
 
 
