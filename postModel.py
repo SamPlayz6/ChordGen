@@ -109,51 +109,49 @@ def note_to_midi(note_str):
     if note_str in {"PAD", "UNK"}:
         return None  # Return None for PAD or UNK
 
-    try:
-        note_part, octave_str = note_str.split('/')
-        note = note_part[0]  # Note letter (e.g., 'C')
-        sharp_or_natural = note_part[1]  # '1' for sharp, '0' for natural
-        octave = int(octave_str)  # Octave number
+    note_part, octave_str = note_str.split('/')
+    note = note_part[0]  # Note letter (e.g., 'C')
+    sharp_or_natural = note_part[1]  # '1' for sharp, '0' for natural
+    octave = int(octave_str)  # Octave number
 
-        notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-        if sharp_or_natural == '1':
-            note_name = note + '#'
-        else:
-            note_name = note
+    notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    if sharp_or_natural == '1':
+        note_name = note + '#'
+    else:
+        note_name = note
 
-        base_note_index = notes.index(note_name)
+    base_note_index = notes.index(note_name)
 
-        # MIDI notes start at 0 for C-1 (MIDI standard), so middle C (C4) is 60
-        return 12 * (octave + 1) + base_note_index
-    except ValueError as e:
-        print(f"Failed to parse note: {note_str} - {e}")
-        return None
+    # MIDI notes start at 0 for C-1 (MIDI standard), so middle C (C4) is 60
+    return 12 * (octave + 1) + base_note_index
+
 
 
 #Processing the chords singularly
 def chord_to_notes(chord):
+    print(chord)
     if chord == "PAD":
         return []  # Return empty list for PAD
 
-    try:
-        root, quality = chord.split('/')
-        root_note = note_to_midi(root)
-        if root_note is None:
-            return []
+    
+    root, quality = chord.split('/')
+    root_note = note_to_midi(root + "/4")
 
-        if 'minor' in quality:
-            return [root_note, root_note + 3, root_note + 7]
-        elif 'dominant' in quality:
-            return [root_note, root_note + 4, root_note + 7, root_note + 10]
-        elif 'major-seventh' in quality:
-            return [root_note, root_note + 4, root_note + 7, root_note + 11]
-        elif 'diminished' in quality:
-            return [root_note, root_note + 3, root_note + 6]
-        else:
-            return [root_note]  # Default to a single note if no quality matches
-    except ValueError as e:
-        print(f"Failed to parse chord: {chord} - {e}")
+    if root_note is None:
         return []
+
+    if 'minor' in quality:
+        return [root_note, root_note + 3, root_note + 7]
+    elif 'dominant' in quality:
+        return [root_note, root_note + 4, root_note + 7, root_note + 10]
+    elif 'major-seventh' in quality:
+        return [root_note, root_note + 4, root_note + 7, root_note + 11]
+    elif 'diminished' in quality:
+        return [root_note, root_note + 3, root_note + 6]
+    else:
+        return [root_note]  # Default to a single note if no quality matches
+
+
 
 
 def create_midi(melody_string, chord_string, bpm):
@@ -171,20 +169,31 @@ def create_midi(melody_string, chord_string, bpm):
 
     track.append(MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm)))
 
-    for i, (melody, chord) in enumerate(zip(melody_notes, chord_progressions)):
-        time = ticks_per_step if i > 0 else 0  # Only add delay after the first note
+    time_since_last_note = 0  # Initialize time offset
 
+    for melody, chord in zip(melody_notes, chord_progressions):
         chord_notes = chord_to_notes(chord)
-        for note in chord_notes:
-            track.append(Message('note_on', note=note, velocity=64, time=time))
-            track.append(Message('note_off', note=note, velocity=64, time=ticks_per_step))
 
-        if melody != "PAD":  # Handle melody similarly if needed
+        # Process Chord Notes
+        for note in chord_notes:
+            track.append(Message('note_on', note=note, velocity=64, time=time_since_last_note))
+            track.append(Message('note_off', note=note, velocity=64, time=ticks_per_step))
+            time_since_last_note = 0  # Reset time for subsequent events in this step
+
+        # Process Melody Note
+        if melody != "PAD":
             melody_note = note_to_midi(melody)
-            track.append(Message('note_on', note=melody_note, velocity=64, time=time))
-            track.append(Message('note_off', note=melody_note, velocity=64, time=ticks_per_step))
+            if melody_note is not None:
+                track.append(Message('note_on', note=melody_note, velocity=64, time=time_since_last_note))
+                track.append(Message('note_off', note=melody_note, velocity=64, time=ticks_per_step))
+                time_since_last_note = 0  # Reset time for the next event
+
+    # Increment the time since the last note only after processing both chord and melody
+    time_since_last_note = ticks_per_step
 
     mid.save('SungMelodies/Outputs/output_midi.mid')
+
+
 
 # Example usage
 if __name__ == "__main__":
