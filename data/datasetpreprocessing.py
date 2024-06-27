@@ -117,17 +117,66 @@ def augment_symbolic_data(melodies, chords):
 
     return augmented_melodies, augmented_chords
 
-# Example dataset directory
-dataset_directory = 'c:\\Users\\user\\Documents\\GitHub\\ChordGen\\chord-melody-dataset-master'
-melodies, chords = load_and_preprocess_data(dataset_directory)
 
-# Augment the data
-augmented_melodies, augmented_chords = augment_symbolic_data(melodies, chords)
 
-# Combine original and augmented data
-combined_melodies = melodies + augmented_melodies
-combined_chords = chords + augmented_chords
+# Filling in the chords to the chords dataset to increase to the same length as the notes dataset
+import csv
 
-# Save combined data to new CSV files
-save_to_csv(melodies, 'data/melodies.csv')
-save_to_csv(chords, 'data/chords.csv')
+def read_csv_to_string(filename):
+    """ Read a CSV file and convert contents to a single string. """
+    with open(filename, 'r', encoding='utf-8') as csvfile:
+        reader = csv.reader(csvfile)
+        data = [row for row in reader]
+    return data
+
+def expand_chords(chords_data, notes_count):
+    """ Repeat each chord to match the length of the notes data. """
+    total_chords = sum(len(line) for line in chords_data)
+    repeats_per_chord = notes_count // total_chords
+    extra = notes_count % total_chords
+
+    expanded_chords = []
+    for line in chords_data:
+        for chord in line:
+            expanded_chords.extend([chord] * repeats_per_chord)
+            if extra > 0:
+                expanded_chords.append(chord)
+                extra -= 1
+
+    return ','.join(expanded_chords)  # Joining with commas for CSV format
+
+def process_chords(melodies, chords, expandedChords):
+    melody_data = read_csv_to_string(melodies)
+    chords_data = read_csv_to_string(chords)
+
+    # Flatten the melody_data to calculate the total number of notes
+    flat_melody_data = [item for sublist in melody_data for item in sublist]
+    notes_count = len(flat_melody_data)
+
+    expanded_chords = expand_chords(chords_data, notes_count).split(',')  # Splitting into a list
+
+    with open(expandedChords, 'w', newline='', encoding='utf-8') as f:
+        csv_writer = csv.writer(f)
+        csv_writer.writerow(expanded_chords)  # Writing as separate fields
+
+# Example usage - 'path_to_notes.csv', 'path_to_chords.csv', 'output_chords.csv'
+process_chords('data/melodies.csv', 'data/chords.csv', 'data/expandedChords.csv')
+
+
+
+
+
+# # Example dataset directory
+# dataset_directory = 'c:\\Users\\user\\Documents\\GitHub\\ChordGen\\chord-melody-dataset-master'
+# melodies, chords = load_and_preprocess_data(dataset_directory)
+
+# # Augment the data
+# augmented_melodies, augmented_chords = augment_symbolic_data(melodies, chords)
+
+# # Combine original and augmented data
+# combined_melodies = melodies + augmented_melodies
+# combined_chords = chords + augmented_chords
+
+# # Save combined data to new CSV files
+# save_to_csv(melodies, 'data/melodies.csv')
+# save_to_csv(chords, 'data/chords.csv')
