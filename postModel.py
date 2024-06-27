@@ -71,7 +71,7 @@ def chord_notes(root, quality):
 
 from music21 import stream, midi, converter, meter
 
-def add_chords_to_midi(chord_string, timings, melody_file, output_file):
+def change_chords_to_midi(chord_string, timings, melody_file, output_file):
     melody_stream = converter.parse(melody_file)
     total_duration = melody_stream.duration.quarterLength  # Get total length of the melody in quarter lengths
     
@@ -98,14 +98,106 @@ def add_chords_to_midi(chord_string, timings, melody_file, output_file):
     midi_file.close()
     print(f"Combined MIDI file '{output_file}' has been saved.")
 
+
+#-------------------Melody + Chord String + BMP to MIDI----------Retrying above functions
+import mido
+from mido import MidiFile, MidiTrack, Message, MetaMessage
+
+#Finding the root note of the chord
+def note_to_midi(note_str):
+    """ Convert note string with format 'NoteSharpOrNatural/Octave' to MIDI note number. """
+    if note_str in {"PAD", "UNK"}:
+        return None  # Return None for PAD or UNK
+
+    try:
+        note_part, octave_str = note_str.split('/')
+        note = note_part[0]  # Note letter (e.g., 'C')
+        sharp_or_natural = note_part[1]  # '1' for sharp, '0' for natural
+        octave = int(octave_str)  # Octave number
+
+        notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        if sharp_or_natural == '1':
+            note_name = note + '#'
+        else:
+            note_name = note
+
+        base_note_index = notes.index(note_name)
+
+        # MIDI notes start at 0 for C-1 (MIDI standard), so middle C (C4) is 60
+        return 12 * (octave + 1) + base_note_index
+    except ValueError as e:
+        print(f"Failed to parse note: {note_str} - {e}")
+        return None
+
+
+#Processing the chords singularly
+def chord_to_notes(chord):
+    if chord == "PAD":
+        return []  # Return empty list for PAD
+
+    try:
+        root, quality = chord.split('/')
+        root_note = note_to_midi(root)
+        if root_note is None:
+            return []
+
+        if 'minor' in quality:
+            return [root_note, root_note + 3, root_note + 7]
+        elif 'dominant' in quality:
+            return [root_note, root_note + 4, root_note + 7, root_note + 10]
+        elif 'major-seventh' in quality:
+            return [root_note, root_note + 4, root_note + 7, root_note + 11]
+        elif 'diminished' in quality:
+            return [root_note, root_note + 3, root_note + 6]
+        else:
+            return [root_note]  # Default to a single note if no quality matches
+    except ValueError as e:
+        print(f"Failed to parse chord: {chord} - {e}")
+        return []
+
+
+def create_midi(melody_string, chord_string, bpm):
+    mid = MidiFile()
+    track = MidiTrack()
+    mid.tracks.append(track)
+
+    melody_notes = melody_string.split(',')
+    chord_progressions = chord_string.split(',')
+
+    ticks_per_beat = mid.ticks_per_beat
+    beat_per_second = bpm / 60
+    ticks_per_second = ticks_per_beat * beat_per_second
+    ticks_per_step = int(ticks_per_second)
+
+    track.append(MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm)))
+
+    for i, (melody, chord) in enumerate(zip(melody_notes, chord_progressions)):
+        time = ticks_per_step if i > 0 else 0  # Only add delay after the first note
+
+        chord_notes = chord_to_notes(chord)
+        for note in chord_notes:
+            track.append(Message('note_on', note=note, velocity=64, time=time))
+            track.append(Message('note_off', note=note, velocity=64, time=ticks_per_step))
+
+        if melody != "PAD":  # Handle melody similarly if needed
+            melody_note = note_to_midi(melody)
+            track.append(Message('note_on', note=melody_note, velocity=64, time=time))
+            track.append(Message('note_off', note=melody_note, velocity=64, time=ticks_per_step))
+
+    mid.save('SungMelodies/Outputs/output_midi.mid')
+
 # Example usage
 if __name__ == "__main__":
-    chord_string = "C4/major,G4/minor,C4/major-seventh,A4/minor-seventh"
-    timings = [0, 2, 4, 6]  # Example timings
-    melody_file_path = "SungMelodies/Inputs/melody.mid"
-    output_file_path = "SungMelodies/Outputs/chords.mid"
-    add_chords_to_midi(chord_string, timings, melody_file_path, output_file_path)
+    melody_string = "C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5"
+    chord_string = "PAD,E0/dominant,E0/dominant,E0/minor-seventh,E0/minor-seventh,B0/minor-seventh,E0/minor-seventh,B0/minor-seventh,B0/minor-seventh,B0/minor-seventh,E0/dominant,E0/dominant,B0/minor-seventh,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,D0/dominant,D0/dominant,G0/major-seventh,G0/major-seventh,G0/major-seventh,E0/dominant,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A1/diminished,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A1/diminished,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A1/diminished,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A1/diminished"
+    bpm = 60
+    create_midi(melody_string, chord_string, bpm)
 
+
+    # chord_string = "E0/dominant,E0/dominant,E0/minor-seventh,E0/minor-seventh,B0/minor-seventh,E0/minor-seventh,B0/minor-seventh,B0/minor-seventh,B0/minor-seventh,E0/dominant,E0/dominant,B0/minor-seventh,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,D0/dominant,D0/dominant,G0/major-seventh,G0/major-seventh,G0/major-seventh,E0/dominant,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A1/diminished,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A1/diminished,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A1/diminished,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A1/diminished"
+    # melody_file_path = "SungMelodies/Inputs/melody.mid"
+    # output_file_path = "SungMelodies/Outputs/chords.mid"
+    # change_chords_to_midi(chord_string, timings, melody_file_path, output_file_path)
 
 
     # # Combining the Melody and Chord MIDIs

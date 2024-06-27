@@ -26,7 +26,7 @@ def read_from_csv(filename):
 
 def create_tokenizer(data):
     # Assuming data is a single string with space-separated tokens
-    tokens = set(data.split(","))
+    tokens = set(data.split())
     # Additional handling for complex chord structures
     token_to_id = {token: idx + 1 for idx, token in enumerate(sorted(tokens))}
     token_to_id['PAD'] = 0
@@ -174,13 +174,14 @@ def evaluate(model, val_loader, criterion, device):
     val_acc = 100 * correct / total
     return val_loss, val_acc
 
-def predict(model, input_sequence, token_to_id, id_to_token, device):
+def predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device):
     model.eval()
-    input_tensor = torch.tensor([[token_to_id.get(note, token_to_id['UNK']) for note in input_sequence.split(',')]], dtype=torch.long).to(device)
+    input_tensor = torch.tensor([[token_to_id_melody.get(note, token_to_id_melody['UNK']) for note in input_sequence.split(',')]], dtype=torch.long).to(device)
+
     with torch.no_grad():
         output = model(input_tensor, torch.zeros((1, input_tensor.size(1)), dtype=torch.long).to(device))
         predicted_indices = output.argmax(2).squeeze().tolist()
-        predicted_chords = [id_to_token.get(idx, 'UNK') for idx in predicted_indices]
+        predicted_chords = [id_to_token_chord.get(idx, 'UNK') for idx in predicted_indices]
     return predicted_chords
 
 def main(args):
@@ -207,8 +208,9 @@ def main(args):
     elif args.mode == 'inference':
         model.load_state_dict(torch.load('model.pth'))
         input_sequence = "C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5"
-        predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_melody, device)
-        print("Predicted Chords:", predicted_chords)
+        predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device)
+        print(len(predicted_chords), " :Predicted Chords: ", predicted_chords)
+        print(len(input_sequence.split(",")), ":Input Melody: ", input_sequence.split(","))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train or run inference on an LSTM model for music generation.')
