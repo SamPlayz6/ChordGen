@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
-from torch.nn.functional import pad
 import numpy as np
 import random
 
@@ -14,35 +13,58 @@ def read_from_csv(filename):
     with open(filename, 'r', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            data.append(' '.join(row))  # Merge all columns into a single string per row
-    return data
+            data.extend(row)  # Append each cell to a single list
+    return ' '.join(data)  # Return a single string containing all data
 
-# Tokenization and mapping functions
+# def create_tokenizer(data):
+#     tokens = set(data.split())
+#     token_to_id = {token: idx + 1 for idx, token in enumerate(tokens)}
+#     token_to_id['PAD'] = 0
+#     token_to_id['UNK'] = len(token_to_id)
+#     id_to_token = {idx: token for token, idx in token_to_id.items()}
+#     return lambda seq: [token_to_id.get(token, token_to_id['UNK']) for token in seq.split()], token_to_id, id_to_token
+
 def create_tokenizer(data):
-    tokens = set()
-    for seq in data:
-        tokens.update(seq.split())
-    token_to_id = {token: idx + 1 for idx, token in enumerate(tokens)}
+    # Assuming data is a single string with space-separated tokens
+    tokens = set(data.split(","))
+    # Additional handling for complex chord structures
+    token_to_id = {token: idx + 1 for idx, token in enumerate(sorted(tokens))}
     token_to_id['PAD'] = 0
-    token_to_id['UNK'] = len(token_to_id)
+    token_to_id['UNK'] = max(token_to_id.values()) + 1  # Ensuring unique index for 'UNK'
     id_to_token = {idx: token for token, idx in token_to_id.items()}
     return lambda seq: [token_to_id.get(token, token_to_id['UNK']) for token in seq.split()], token_to_id, id_to_token
 
-# Load data function to handle melodies and chords
-def load_data(melody_file, chord_file):
+def create_sequences(tokenized_data, sequence_length, step):
+    sequences = []
+    # tokenized_data now should be a single long list of tokens
+    for i in range(0, len(tokenized_data) - sequence_length + 1, step):
+        sequences.append(tokenized_data[i:i+sequence_length])
+    return sequences
+
+def load_data(melody_file, chord_file, sequence_length, step):
     melody_data = read_from_csv(melody_file)
     chord_data = read_from_csv(chord_file)
     tokenizer_melody, token_to_id_melody, id_to_token_melody = create_tokenizer(melody_data)
     tokenizer_chord, token_to_id_chord, id_to_token_chord = create_tokenizer(chord_data)
-    tokenized_melodies = [tokenizer_melody(sequence) for sequence in melody_data]
-    tokenized_chords = [tokenizer_chord(sequence) for sequence in chord_data]
+
+    # print(token_to_id_chord)
+    # print(token_to_id_melody)
+
+    tokenized_melodies = tokenizer_melody(melody_data)
+    tokenized_chords = tokenizer_chord(chord_data)
+    tokenized_melodies = create_sequences(tokenized_melodies, sequence_length, step)
+    tokenized_chords = create_sequences(tokenized_chords, sequence_length, step)
+
+    if not tokenized_melodies or not tokenized_chords:
+        raise ValueError("No data sequences were generated. Check the input data and parameters.")
+
     return tokenized_melodies, tokenized_chords, token_to_id_melody, id_to_token_melody, token_to_id_chord, id_to_token_chord
 
 class MelodyChordDataset(Dataset):
-    def __init__(self, melodies, chords, max_length=None):
+    def __init__(self, melodies, chords):
+        assert len(melodies) == len(chords), "Melodies and chords must have the same number of entries."
         self.melodies = melodies
         self.chords = chords
-        self.max_length = max_length if max_length is not None else max(len(m) for m in melodies + chords)
 
     def __len__(self):
         return len(self.melodies)
@@ -50,14 +72,8 @@ class MelodyChordDataset(Dataset):
     def __getitem__(self, idx):
         melody = torch.tensor(self.melodies[idx], dtype=torch.long)
         chord = torch.tensor(self.chords[idx], dtype=torch.long)
-        if self.max_length:
-            # Pad sequences to the maximum length
-            melody = pad(melody, (0, self.max_length - len(melody)), value=0)
-            chord = pad(chord, (0, self.max_length - len(chord)), value=0)
         return melody, chord
-    
 
-# Define LSTM model classes
 class Encoder(nn.Module):
     def __init__(self, input_dim, emb_dim, hid_dim, n_layers, dropout):
         super().__init__()
@@ -107,7 +123,7 @@ class Seq2Seq(nn.Module):
         return outputs
 
 def train_model(model, train_loader, val_loader, num_epochs, learning_rate, device):
-    criterion = nn.CrossEntropyLoss() # Defines the criteria to check the effect of the predicted result
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     model.to(device)
 
@@ -130,7 +146,7 @@ def train_model(model, train_loader, val_loader, num_epochs, learning_rate, devi
             total += chords.nelement()
             correct += (predicted == chords).sum().item()
 
-            if i % 4 == 0:  # Adjust this depending on the size of your dataset
+            if i % 4 == 0:
                 print(f'Batch {i}, Loss: {loss.item()}, Acc: {100 * correct / total:.2f}%')
 
         train_acc = 100 * correct / total
@@ -139,7 +155,6 @@ def train_model(model, train_loader, val_loader, num_epochs, learning_rate, devi
         print(f'Epoch {epoch+1}: Train Loss: {train_loss / len(train_loader):.4f}, '
               f'Train Acc: {train_acc:.2f}%, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%')
 
-#Computes the validation loss and accuracy
 def evaluate(model, val_loader, criterion, device):
     model.eval()
     val_loss = 0
@@ -159,46 +174,44 @@ def evaluate(model, val_loader, criterion, device):
     val_acc = 100 * correct / total
     return val_loss, val_acc
 
-
-
-
 def predict(model, input_sequence, token_to_id, id_to_token, device):
     model.eval()
     input_tensor = torch.tensor([[token_to_id.get(note, token_to_id['UNK']) for note in input_sequence.split(',')]], dtype=torch.long).to(device)
     with torch.no_grad():
         output = model(input_tensor, torch.zeros((1, input_tensor.size(1)), dtype=torch.long).to(device))
         predicted_indices = output.argmax(2).squeeze().tolist()
-        # predicted_chords = [id_to_token[idx] for idx in predicted_indices]
         predicted_chords = [id_to_token.get(idx, 'UNK') for idx in predicted_indices]
     return predicted_chords
 
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    tokenized_melodies, tokenized_chords, token_to_id_melody, id_to_token_melody, token_to_id_chord, id_to_token_chord = load_data('data/melodies.csv', 'data/chords.csv')
+    sequence_length = 30  # Length of each input sequence
+    step = 5  # Step size for sliding window
+    # tokenized_melodies, tokenized_chords = load_data('data/melodies.csv', 'data/ExapndedChords.csv', sequence_length, step)
+    tokenized_melodies, tokenized_chords, token_to_id_melody, id_to_token_melody, token_to_id_chord, id_to_token_chord = load_data('data/melodies.csv', 'data/expandedChords.csv', sequence_length, step)
+
 
     dataset = MelodyChordDataset(tokenized_melodies, tokenized_chords)
     train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
     val_loader = DataLoader(dataset, batch_size=32)  # Placeholder for actual validation data
 
     model = Seq2Seq(
-        Encoder(input_dim=len(token_to_id_melody), emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5), # training model parameters
-        Decoder(output_dim=len(token_to_id_chord), emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5), # Training model parameters
+        Encoder(input_dim=len(token_to_id_melody), emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5),
+        Decoder(output_dim=len(token_to_id_chord), emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5),
         device
     ).to(device)
 
     if args.mode == 'train':
-        train_model(model, train_loader, val_loader, 2, 0.01, device)  # 10 epochs and learning rate of 0.001
-        torch.save(model.state_dict(), 'Example/model.pth')
+        train_model(model, train_loader, val_loader, 1, 0.001, device)  # Train for 10 epochs with a learning rate of 0.001
+        torch.save(model.state_dict(), 'model.pth')
     elif args.mode == 'inference':
-        model.load_state_dict(torch.load('Example/model.pth'))
-        input_sequence = "C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,A0/5,A0/5,F1/5,G0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5"
+        model.load_state_dict(torch.load('model.pth'))
+        input_sequence = "C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5"
         predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_melody, device)
-        print(len(predicted_chords), " :Predicted Chords:", predicted_chords)
-        print(len(input_sequence.split(",")), " :Input Sequence: ", input_sequence.split(","))
+        print("Predicted Chords:", predicted_chords)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train or run inference on an LSTM model for music generation.')
     parser.add_argument('mode', choices=['train', 'inference'], help='Choose "train" or "inference" mode')
-    # parser.add_argument('--input_melody', type=str, help='Input melody for inference, formatted as comma-separated notes') # Here later I can get it to maybe look at where the sung audio file is saved
     args = parser.parse_args()
     main(args)
