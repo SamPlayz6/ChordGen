@@ -151,38 +151,40 @@ def create_midi(melody_string, chord_string, bpm):
     mid = MidiFile()
     track = MidiTrack()
     mid.tracks.append(track)
+    track.append(MetaMessage('set_tempo', tempo=mido.bpm2tempo(bpm)))
 
     melody_notes = melody_string.split(',')
     chord_progressions = chord_string.split(',')
-
     ticks_per_beat = mid.ticks_per_beat
-    print(ticks_per_beat)
-    tempo = mido.bpm2tempo(bpm)
-    track.append(MetaMessage('set_tempo', tempo=tempo))
+    time_since_last_note = 0
 
-    time_since_last_event = 0  # Initialize time offset
+    current_chord = []
+    for melody_note, chord in zip(melody_notes, chord_progressions):
+        new_chord = chord_to_notes(chord)
+        if new_chord != current_chord:
+            # Turn off the previous chord
+            for note in current_chord:
+                track.append(Message('note_off', note=note, velocity=64, time=0))
+            # Turn on the new chord
+            for note in new_chord:
+                track.append(Message('note_on', note=note, velocity=64, time=time_since_last_note))
+            current_chord = new_chord
+            time_since_last_note = 0  # Reset time offset for chord changes
 
-    for melody, chord in zip(melody_notes, chord_progressions):
-        chord_notes = chord_to_notes(chord)
+        # Process the melody note
+        if melody_note != "PAD":
+            melody_note_midi = note_to_midi(melody_note)
+            if melody_note_midi is not None:
+                track.append(Message('note_on', note=melody_note_midi, velocity=64, time=time_since_last_note))
+                track.append(Message('note_off', note=melody_note_midi, velocity=64, time=ticks_per_beat))
+                time_since_last_note = 0  # Reset time offset for melody notes
 
-        # Process Chord Notes
-        for note in chord_notes:
-            track.append(Message('note_on', note=note, velocity=64, time=time_since_last_event))
-            time_since_last_event = 0  # Reset time for subsequent events in this step
-
-        for note in chord_notes:
-            track.append(Message('note_off', note=note, velocity=64, time=ticks_per_beat))
-            time_since_last_event = 0  # Reset time for subsequent events in this step
-
-        # Process Melody Note
-        if melody != "PAD":
-            melody_note = note_to_midi(melody)
-            if melody_note is not None:
-                track.append(Message('note_on', note=melody_note, velocity=64, time=time_since_last_event))
-                track.append(Message('note_off', note=melody_note, velocity=64, time=ticks_per_beat + 1000))
-                time_since_last_event = 0  # Reset time for the next event
+    # Ensure all notes are turned off at the end
+    for note in current_chord:
+        track.append(Message('note_off', note=note, velocity=64, time=0))
 
     mid.save('SungMelodies/Outputs/output_midi.mid')
+
 
 # Example usage
 if __name__ == "__main__":
