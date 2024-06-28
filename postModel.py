@@ -126,14 +126,3 @@ if __name__ == "__main__":
 
     create_midi(melody_string, chord_string, bpm)
     create_melody_midi(melody_string,bpm)
-
-    # chord_string = "E0/dominant,E0/dominant,E0/minor-seventh,E0/minor-seventh,B0/minor-seventh,E0/minor-seventh,B0/minor-seventh,B0/minor-seventh,B0/minor-seventh,E0/dominant,E0/dominant,B0/minor-seventh,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,D0/dominant,D0/dominant,G0/major-seventh,G0/major-seventh,G0/major-seventh,E0/dominant,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A1/diminished,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A1/diminished,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A1/diminished,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A1/diminished"
-    # melody_file_path = "TestMelodies/Inputs/melody.mid"
-    # output_file_path = "TestMelodies/Outputs/chords.mid"
-    # change_chords_to_midi(chord_string, timings, melody_file_path, output_file_path)
-
-
-    # # Combining the Melody and Chord MIDIs
-    # chords_file = "TestMelodies/Outputs/chords.mid"
-    # output_file = "TestMelodies/Outputs/combined_output.mid"
-    # combine_midi_files(melody_file, chords_file, output_file)
