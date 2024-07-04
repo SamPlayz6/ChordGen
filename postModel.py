@@ -1,4 +1,4 @@
-#-------------------Convert Melody to MIDI-----------Testing Purposes Only
+#-------------------Convert Melody to MIDI(Not Part Of Flow)-----------
 def create_melody_midi(melody_string, bpm):
     mid = MidiFile()
     track = MidiTrack()

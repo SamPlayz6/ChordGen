@@ -1,7 +1,7 @@
 from music21 import converter
 from mido import MidiFile
 
-#--------------------XML to MIDI-------------------
+#--------------------XML to MIDI(Not Part Of Flow)-------------------
 
 def convert_xml_to_midi(xml_file_path, midi_file_path):
     # Load the MusicXML file
@@ -13,7 +13,7 @@ def convert_xml_to_midi(xml_file_path, midi_file_path):
 
 
 
-#--------------MIDI to String(Of notes)-------------
+#--------------MIDI to String(Of notes)(Not Part Of Flow)-------------
 
 def midi_to_note_string(midi_file, ticks_per_beat=480):
     midi = MidiFile(midi_file)
@@ -38,12 +38,18 @@ def midi_to_note_string(midi_file, ticks_per_beat=480):
     return ",".join(note_string)
 
 
+#-----------------AudioToMIDI(Or StringOfNotes)------------
+
+
+
+
+
 if __name__ == "__main__":
     # Example usage
     #convert_xml_to_midi('C://Users//user//Documents//GitHub//ChordGen//Example//as.xml', 'C://Users//user//Documents//GitHub//ChordGen//Example//test.mid')
 
 
     # Converting Melody MIDI to Melody String Sequence
-    midi_file = "SungMelodies/Inputs/melody.mid"
+    midi_file = "TestMelodies/Inputs/melody.mid"
     note_string = midi_to_note_string(midi_file)
     print(note_string)
