@@ -43,66 +43,61 @@ import librosa
 import numpy as np
 from midiutil import MIDIFile
 
-def wav_to_midi(input_wav, output_midi, sampling_rate=100, min_duration=0.1, noise_threshold=0.1):
+def wav_to_midi_improved(input_wav, output_midi, params):
     # Load the audio file
     y, sr = librosa.load(input_wav)
+    
+    # Get total duration of the audio
+    total_duration = librosa.get_duration(y=y, sr=params['sample_rate'])
 
-    # Extract pitches and magnitudes
-    pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
+    # Use pYIN for improved pitch detection
+    f0, voiced_flag, voiced_probs = librosa.pyin(y, 
+                                                 fmin=librosa.note_to_hz(params['min_note']), 
+                                                 fmax=librosa.note_to_hz(params['max_note']),
+                                                 frame_length=params['frame_length'],
+                                                 hop_length=params['hop_length'])
 
     # Create a MIDI file with one track
     midi = MIDIFile(1)
     track = 0
     time = 0
     midi.addTrackName(track, time, "Sample Track")
-    midi.addTempo(track, time, 120)
+    midi.addTempo(track, time, params['tempo'])
 
     # Set the instrument to Acoustic Grand Piano
-    program = 0
-    midi.addProgramChange(track, 0, time, program)
+    midi.addProgramChange(track, 0, time, params['instrument'])
 
-    # Calculate the hop length used by librosa.piptrack
-    hop_length = len(y) // (pitches.shape[1] - 1)
-
+    # Process the pitch data
     last_pitch = None
     start_time = 0
-    total_duration = librosa.get_duration(y=y, sr=sr)
+    hop_time = params['hop_length'] / len(f0)
 
-    for frame in range(pitches.shape[1]):
-        # Calculate the corresponding time in the original audio
-        current_time = frame * hop_length / sr
-
-        # Get the pitch with the highest magnitude
-        index = magnitudes[:, frame].argmax()
-        pitch = pitches[index, frame]
-        magnitude = magnitudes[index, frame]
-
-        if pitch > 0 and magnitude > noise_threshold:  # Check if the pitch is above the noise threshold
+    for i, pitch in enumerate(f0):
+        current_time = i * hop_time
+        if voiced_flag[i] and pitch is not None:
             midi_pitch = round(librosa.hz_to_midi(pitch))
-
             if midi_pitch != last_pitch:
                 if last_pitch is not None:
-                    # Add the previous note to the MIDI file
                     duration = current_time - start_time
-                    if duration >= min_duration:
-                        midi.addNote(track, 0, last_pitch, start_time, duration, 100)
-
-                # Start a new note
+                    if duration >= params['min_duration']:
+                        velocity = min(127, max(1, int(voiced_probs[i] * 127)))
+                        midi.addNote(track, 0, last_pitch, start_time, duration, velocity)
                 start_time = current_time
                 last_pitch = midi_pitch
         else:
-            # No clear pitch or below noise threshold, end the current note if there is one
             if last_pitch is not None:
                 duration = current_time - start_time
-                if duration >= min_duration:
-                    midi.addNote(track, 0, last_pitch, start_time, duration, 100)
+                if duration >= params['min_duration']:
+                    velocity = min(127, max(1, int(voiced_probs[i-1] * 127)))
+                    midi.addNote(track, 0, last_pitch, start_time, duration, velocity)
                 last_pitch = None
 
     # Add the last note if there is one
     if last_pitch is not None:
         duration = total_duration - start_time
-        if duration >= min_duration:
-            midi.addNote(track, 0, last_pitch, start_time, duration, 100)
+        if duration >= params['min_duration']:
+            velocity = min(127, max(1, int(voiced_probs[-1] * 127)))
+            midi.addNote(track, 0, last_pitch, start_time, duration, velocity)
 
     # Save the MIDI file
     with open(output_midi, "wb") as output_file:
@@ -111,10 +106,26 @@ def wav_to_midi(input_wav, output_midi, sampling_rate=100, min_duration=0.1, noi
 
 
 
-if __name__ == "__main__":
-    # Use the function with the specified input and output paths
-    wav_to_midi('TestMelodies/M1.wav', 'TestMelodies/Inputs/ModelInputMIDI.mid', noise_threshold=0.9)
 
+
+if __name__ == "__main__":
+   # Adjustable parameters
+    params = {
+        'sample_rate': 44100,  # Audio sample rate
+        'min_note': 'C2',      # Lowest note to detect
+        'max_note': 'C7',      # Highest note to detect
+        'frame_length': 2048,  # Frame size for pitch detection
+        'hop_length': 512,     # Hop size for pitch detection
+        'min_duration': 0.1,   # Minimum note duration in seconds
+        'tempo': 120,          # MIDI tempo
+        'instrument': 0        # MIDI instrument (0 = Acoustic Grand Piano)
+    }
+
+    # Use the function with the specified input and output paths
+    wav_to_midi_improved('TestMelodies/M1.wav', 'TestMelodies/Inputs/ModelInputMIDI.mid', params)   
+    
+    
+    
     # Example usage
     #convert_xml_to_midi('C://Users//user//Documents//GitHub//ChordGen//Example//as.xml', 'C://Users//user//Documents//GitHub//ChordGen//Example//test.mid')
 
