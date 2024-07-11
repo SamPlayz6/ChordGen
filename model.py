@@ -184,7 +184,7 @@ def predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device
         predicted_chords = [id_to_token_chord.get(idx, 'UNK') for idx in predicted_indices]
     return predicted_chords
 
-def main(args):
+def main(mode,input_sequence=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sequence_length = 30  # Length of each input sequence
     step = 5  # Step size for sliding window
@@ -202,12 +202,11 @@ def main(args):
         device
     ).to(device)
 
-    if args.mode == 'train':
+    if mode == 'train':
         train_model(model, train_loader, val_loader, 1, 0.001, device)  # Train for 10 epochs with a learning rate of 0.001
         torch.save(model.state_dict(), 'model.pth')
-    elif args.mode == 'inference':
+    elif mode == 'inference':
         model.load_state_dict(torch.load('model.pth'))
-        input_sequence = "C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5"
         predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device)
         print(len(predicted_chords), " :Predicted Chords: ", predicted_chords)
         print(len(input_sequence.split(",")), ":Input Melody: ", input_sequence.split(","))
@@ -215,5 +214,14 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train or run inference on an LSTM model for music generation.')
     parser.add_argument('mode', choices=['train', 'inference'], help='Choose "train" or "inference" mode')
+    parser.add_argument('input_sequence', nargs='?', help='Additional input required for inference mode')
+
     args = parser.parse_args()
-    main(args)
+
+    # Depending on the mode, call main with different parameters
+    if args.mode == 'train':
+        main(args.mode)
+    elif args.mode == 'inference':
+        if not args.input_sequence:
+            parser.error("Inference mode requires an additional input.")
+        main(args.mode, args.input_sequence)

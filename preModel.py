@@ -1,3 +1,4 @@
+import os
 from music21 import converter
 from mido import MidiFile
 
@@ -13,7 +14,7 @@ def convert_xml_to_midi(xml_file_path, midi_file_path):
 
 
 
-#--------------MIDI to String(Of notes)(Not Part Of Flow)-------------
+#--------------MIDI to String(Of notes)-------------
 
 def midi_to_note_string(midi_file, ticks_per_beat=480):
     midi = MidiFile(midi_file)
@@ -43,7 +44,7 @@ import librosa
 import numpy as np
 from midiutil import MIDIFile
 
-def wav_to_midi_improved(input_wav, output_midi, min_duration=0.1):
+def wav_to_midi(input_wav, output_midi, min_duration=0.1):
     # Load the audio file
     y, sr = librosa.load(input_wav)
     
@@ -102,9 +103,48 @@ def wav_to_midi_improved(input_wav, output_midi, min_duration=0.1):
         midi.writeFile(output_file)
 
 
+#-----------------Reading input file----------------
+
+def get_single_file_from_directory(directory_path):
+    files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
+    
+    file_path = os.path.join(directory_path, files[0])
+    file_extension = os.path.splitext(file_path)[1]
+    print(file_extension.lower())
+    print("her")
+    if file_extension.lower() in ['.wav', '.mid']:
+        return file_path, file_extension.lower()
+    else:
+        raise ValueError("The file is not a .wav or .mid file.")
+
 if __name__ == "__main__":
+    try:
+        file_path, file_type = get_single_file_from_directory('/Input')
+        print("wwow")
+    except Exception as e:
+        print(e)
+        print("Terribel")
+
+    print(file_path, file_type)
+
+    if file_type == ".wav":
+        print("Processing .wav file...")
+        # Input - Output paths
+        wav_to_midi(file_path, 'Input/tempStorage/ModelInputMIDI.mid')
+        # Converting Melody MIDI to Melody String Sequence
+        note_string = midi_to_note_string('Input/tempStorage/ModelInputMIDI.mid')
+        print(note_string)
+
+
+    elif file_type == ".mid":
+        print("Processing .mid file..")
+        # Converting Melody MIDI to Melody String Sequence
+        note_string = midi_to_note_string(file_path)
+        print(note_string)
+
+
     # Use the function with the specified input and output paths
-    wav_to_midi_improved('TestMelodies/M1.wav', 'TestMelodies/Inputs/ModelInputMIDI.mid')
+    # wav_to_midi_improved('TestMelodies/M1.wav', 'TestMelodies/Inputs/ModelInputMIDI.mid')
 
     # Example usage
     #convert_xml_to_midi('C://Users//user//Documents//GitHub//ChordGen//Example//as.xml', 'C://Users//user//Documents//GitHub//ChordGen//Example//test.mid')

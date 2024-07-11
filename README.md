@@ -18,3 +18,12 @@ python model.py inference
 
 ### Dependancies
 *List all libraries
+
+
+
+## Run on Unix (or Windows Git Bash)
+To change the execution permissons: ```chmod +x main.sh```
+
+To run the ChordGen flow:  ```./main.sh```
+
+
