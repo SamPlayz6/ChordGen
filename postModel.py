@@ -21,7 +21,7 @@ def create_melody_midi(melody_string, bpm):
         track.append(Message('note_off', note=note_number, velocity=velocity, time=ticks_per_beat))
 
     # Save the MIDI file
-    mid.save('TestMelodies/Outputs/melody_midi.mid')
+    mid.save('Input/tempStorage/inference_melody_midi.mid')
 
 
 
@@ -114,7 +114,7 @@ def create_midi(melody_string, chord_string, bpm):
         for note in current_chord_notes:
             track.append(Message('note_off', note=note, velocity=64, time=0))
 
-    mid.save('TestMelodies/Outputs/song_midi.mid')
+    mid.save('Input/tempStorage/inference_song_midi.mid')
 
 
 # Example usage

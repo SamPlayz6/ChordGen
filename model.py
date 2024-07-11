@@ -208,8 +208,9 @@ def main(mode,input_sequence=None):
     elif mode == 'inference':
         model.load_state_dict(torch.load('model.pth'))
         predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device)
-        print(len(predicted_chords), " :Predicted Chords: ", predicted_chords)
-        print(len(input_sequence.split(",")), ":Input Melody: ", input_sequence.split(","))
+        # print(len(predicted_chords), " :Predicted Chords: ", predicted_chords)
+        # print(len(input_sequence.split(",")), ":Input Melody: ", input_sequence.split(","))
+        print(predicted_chords)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train or run inference on an LSTM model for music generation.')

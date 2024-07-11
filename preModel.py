@@ -1,4 +1,5 @@
 import os
+import argparse
 from music21 import converter
 from mido import MidiFile
 
@@ -103,53 +104,35 @@ def wav_to_midi(input_wav, output_midi, min_duration=0.1):
         midi.writeFile(output_file)
 
 
-#-----------------Reading input file----------------
-
-def get_single_file_from_directory(directory_path):
-    files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
-    
-    file_path = os.path.join(directory_path, files[0])
-    file_extension = os.path.splitext(file_path)[1]
-    print(file_extension.lower())
-    print("her")
-    if file_extension.lower() in ['.wav', '.mid']:
-        return file_path, file_extension.lower()
-    else:
-        raise ValueError("The file is not a .wav or .mid file.")
-
 if __name__ == "__main__":
-    try:
-        file_path, file_type = get_single_file_from_directory('/Input')
-        print("wwow")
-    except Exception as e:
-        print(e)
-        print("Terribel")
+    # try:
+    #     file_path, file_type = get_single_file_from_directory('Input/')
+    #     print("test1")
+    # except Exception as e:
+    #     print(e)
+    #     print("test2")
 
-    print(file_path, file_type)
+    parser = argparse.ArgumentParser(description='Input File Path + Name')
+    parser.add_argument('file_path', nargs='?', help='State file path for file to be processed')
 
-    if file_type == ".wav":
+    args = parser.parse_args()
+
+
+    if args.file_path[-4:] == ".wav":
         print("Processing .wav file...")
         # Input - Output paths
-        wav_to_midi(file_path, 'Input/tempStorage/ModelInputMIDI.mid')
+        wav_to_midi(args.file_path, 'Input/tempStorage/ModelInputMIDI.mid')
         # Converting Melody MIDI to Melody String Sequence
         note_string = midi_to_note_string('Input/tempStorage/ModelInputMIDI.mid')
         print(note_string)
 
 
-    elif file_type == ".mid":
+    elif args.file_path[-4:] == ".mid":
         print("Processing .mid file..")
         # Converting Melody MIDI to Melody String Sequence
-        note_string = midi_to_note_string(file_path)
+        note_string = midi_to_note_string(args.file_path)
         print(note_string)
 
+    else:
+        print("Input file is neither .wav or .mid",args.file_path[-4:])
 
-    # Use the function with the specified input and output paths
-    # wav_to_midi_improved('TestMelodies/M1.wav', 'TestMelodies/Inputs/ModelInputMIDI.mid')
-
-    # Example usage
-    #convert_xml_to_midi('C://Users//user//Documents//GitHub//ChordGen//Example//as.xml', 'C://Users//user//Documents//GitHub//ChordGen//Example//test.mid')
-
-    # # Converting Melody MIDI to Melody String Sequence
-    # midi_file = "TestMelodies/Inputs/melody.mid"
-    # note_string = midi_to_note_string(midi_file)
-    # print(note_string)
