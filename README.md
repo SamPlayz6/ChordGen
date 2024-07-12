@@ -1,5 +1,5 @@
 # ChordGen
-**A tool to convert a sung melody into music played in any instrument with temperature control on the chord progressions created.**
+**A tool to convert a sung melody into music played on any instrument with temperature control on the chord progressions created.**
 
 *12/07/2024 - This model was trained with low compute and on a smaller version of the full dataset. 
 Model can be further improved with sufficient compute.
@@ -12,7 +12,7 @@ Model can be further improved with sufficient compute.
 
 
 
-## Run on Unix (or Windows Git Bash)
+## Run on Linux (or Windows Git Bash)
 Before running, ensure that you have added your .wav or .mid file to **"ChordGen/Input"** and that it is the only file in this folder.
 
 Navigate to library location using: ```cd```
@@ -21,7 +21,7 @@ To change the execution permissons: ```chmod +x main.sh```
 
 To **run** the ChordGen flow:  ```./main.sh```
 
-To run the ChordGen flow with temperature(___ = Temperature Value): ```./main.sh ___```
++ With temperature( ___ = Temperature Value): ```./main.sh ___```
 
 ---
 <details><summary>Training & Inference</summary>
