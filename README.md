@@ -8,7 +8,7 @@ Model can be further improved with sufficient compute.
 
 ## ChordGen Flow
 
-![ChordGen Layout Visualization](ChordGenFlow.PNG)
+![ChordGen Layout Visualization](/Input/Misc/ChordGenFlow.PNG)
 
 
 
