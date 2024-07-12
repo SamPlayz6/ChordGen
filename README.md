@@ -44,7 +44,7 @@ python model.py inference __NoteSequenceInputString__ --temperature __temp__
 
 
 
-### Dependancies
+### Python Library Dependancies
 * argparse
 * mido
 * librosa
