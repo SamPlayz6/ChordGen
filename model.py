@@ -189,7 +189,7 @@ def main(mode,input_sequence=None):
     sequence_length = 30  # Length of each input sequence
     step = 5  # Step size for sliding window
     # tokenized_melodies, tokenized_chords = load_data('data/melodies.csv', 'data/ExapndedChords.csv', sequence_length, step)
-    tokenized_melodies, tokenized_chords, token_to_id_melody, id_to_token_melody, token_to_id_chord, id_to_token_chord = load_data('data/melodies.csv', 'data/expandedChords.csv', sequence_length, step)
+    tokenized_melodies, tokenized_chords, token_to_id_melody, id_to_token_melody, token_to_id_chord, id_to_token_chord = load_data('data/dataV1 - SmallerDataset/melodies.csv', 'data/dataV1 - SmallerDataset/expandedChords.csv', sequence_length, step)
 
 
     dataset = MelodyChordDataset(tokenized_melodies, tokenized_chords)
@@ -204,9 +204,9 @@ def main(mode,input_sequence=None):
 
     if mode == 'train':
         train_model(model, train_loader, val_loader, 1, 0.001, device)  # Train for 10 epochs with a learning rate of 0.001
-        torch.save(model.state_dict(), 'model.pth')
+        torch.save(model.state_dict(), 'Input/Misc/model.pth')
     elif mode == 'inference':
-        model.load_state_dict(torch.load('model.pth'))
+        model.load_state_dict(torch.load('Input/Misc/model.pth'))
         predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device)
         # print(len(predicted_chords), " :Predicted Chords: ", predicted_chords)
         # print(len(input_sequence.split(",")), ":Input Melody: ", input_sequence.split(","))

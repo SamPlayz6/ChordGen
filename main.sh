@@ -34,7 +34,6 @@ echo "Output from Model: $output_from_model_script "
 
 # Execute PostModel
 echo "Running postModel..."
-output_from_postmodel_script=$(python $postmodel_script $output_from_premodel_script $output_from_model_script)
-echo "$output_from_postmodel_script Hello"
+python $postmodel_script $output_from_premodel_script $output_from_model_script
 
-echo "Processing complete."
+echo "View Output MIDI: ChordGen\Input\Output\inference_song_midi.mid"
