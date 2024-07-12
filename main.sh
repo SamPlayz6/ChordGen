@@ -20,19 +20,21 @@ premodel_script="preModel.py"
 model_script="model.py"
 postmodel_script="postModel.py"
 
-# Execute the preModel script with the input file
+# Execute preModel 
 echo "Running preModel..."
 output_from_premodel_script=$(python $premodel_script $input_file | tail -n 1)
-echo "Output from preModel: $output_from_premodel_script"
+echo "Output from preModel: $output_from_premodel_script "
 
-# #Execute Model
+# Execute Model
 echo "Running model..."
 output_from_model_script=$(python $model_script "inference" "$output_from_premodel_script")
-echo "Output from Model: $output_from_model_script"
+#Splicing the [] from start and end of string
+# output_from_model_script=${output_from_model_script:1:-1}
+echo "Output from Model: $output_from_model_script "
 
-# # Similarly, assuming 'model.py' outputs something 'postModel.py' can pick up
-# # For example, 'model_output.mid' that postModel uses
-# # echo "Running postModel..."
-# # python $postmodel_script
+# Execute PostModel
+echo "Running postModel..."
+output_from_postmodel_script=$(python $postmodel_script $output_from_premodel_script $output_from_model_script)
+echo "$output_from_postmodel_script Hello"
 
-# echo "Processing complete."
+echo "Processing complete."

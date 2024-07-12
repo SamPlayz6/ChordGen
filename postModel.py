@@ -1,3 +1,4 @@
+import argparse
 #-------------------Convert Melody to MIDI(Not Part Of Flow)-----------
 def create_melody_midi(melody_string, bpm):
     mid = MidiFile()
@@ -21,7 +22,7 @@ def create_melody_midi(melody_string, bpm):
         track.append(Message('note_off', note=note_number, velocity=velocity, time=ticks_per_beat))
 
     # Save the MIDI file
-    mid.save('Input/tempStorage/inference_melody_midi.mid')
+    mid.save('Input/Output/inference_melody_midi.mid')
 
 
 
@@ -114,15 +115,21 @@ def create_midi(melody_string, chord_string, bpm):
         for note in current_chord_notes:
             track.append(Message('note_off', note=note, velocity=64, time=0))
 
-    mid.save('Input/tempStorage/inference_song_midi.mid')
+    mid.save('Input/Output/inference_song_midi.mid')
 
 
 # Example usage
 if __name__ == "__main__":
-    melody_string = "C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5"
-    chord_string = "PAD,E0/dominant,E0/dominant,E0/minor-seventh,E0/minor-seventh,B0/minor-seventh,E0/minor-seventh,B0/minor-seventh,B0/minor-seventh,B0/minor-seventh,E0/dominant,E0/dominant,B0/minor-seventh,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,D0/dominant,D0/dominant,G0/major-seventh,G0/major-seventh,G0/major-seventh,E0/dominant,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A1/diminished,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A1/diminished,A0/minor-seventh,A0/minor-seventh,D0/dominant,A1/diminished,A1/diminished,A1/diminished,A0/minor-seventh,A0/minor-seventh,A0/minor-seventh,A1/diminished"
-    bpm = 110
+    parser = argparse.ArgumentParser(description='Take input Strings for MIDI reconstruction')
+    parser.add_argument('melody_input', nargs='?', help='melody String input')
+    parser.add_argument('chord_output', nargs='?', help='Chord String output')
 
+
+    args = parser.parse_args()
+
+    melody_string = args.melody_input
+    chord_string = args.chord_output
+    bpm = 110
 
     create_midi(melody_string, chord_string, bpm)
     create_melody_midi(melody_string,bpm)
