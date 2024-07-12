@@ -20,6 +20,9 @@ premodel_script="preModel.py"
 model_script="model.py"
 postmodel_script="postModel.py"
 
+# Get the optional temperature parameter
+temperature=${1:-1.0}
+
 # Execute preModel 
 echo "Running preModel..."
 output_from_premodel_script=$(python $premodel_script $input_file | tail -n 1)
@@ -33,7 +36,7 @@ output_from_model_script=$(python $model_script "inference" "$output_from_premod
 echo -e "Output from Model: $output_from_model_script \n"
 
 # Execute PostModel
-echo "Running postModel..."
-python $postmodel_script $output_from_premodel_script $output_from_model_script
+echo "Running model..."
+python $model_script "inference" "$output_from_premodel_script" --temperature $temperature
 
 echo -e "\n\nView Output MIDI: ChordGen\Input\Output\inference_song_midi.mid"

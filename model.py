@@ -162,17 +162,19 @@ def evaluate(model, val_loader, criterion, device):
     val_acc = 100 * correct / total
     return val_loss, val_acc
 
-def predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device):
+def predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device, temperature=1.0):
     model.eval()
     input_tensor = torch.tensor([[token_to_id_melody.get(note, token_to_id_melody['UNK']) for note in input_sequence.split(',')]], dtype=torch.long).to(device)
 
     with torch.no_grad():
         output = model(input_tensor, torch.zeros((1, input_tensor.size(1)), dtype=torch.long).to(device))
-        predicted_indices = output.argmax(2).squeeze().tolist()
-        predicted_chords = [id_to_token_chord.get(idx, 'UNK') for idx in predicted_indices]
+        output = output / temperature
+        probs = torch.nn.functional.softmax(output, dim=-1)
+        predicted_indices = torch.multinomial(probs.view(-1, probs.shape[-1]), 1).view(probs.shape[:-1]).tolist()
+        predicted_chords = [id_to_token_chord.get(idx, 'UNK') for idx in predicted_indices[0]]
     return predicted_chords
 
-def main(mode, input_sequence=None, sequence_length=30, step=5, batch_size=32, num_epochs=10, learning_rate=0.001, emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5):
+def main(mode, input_sequence=None, sequence_length=30, step=5, batch_size=32, num_epochs=10, learning_rate=0.001, emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5, temperature=1.0):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     tokenized_melodies, tokenized_chords, token_to_id_melody, id_to_token_melody, token_to_id_chord, id_to_token_chord = load_data(
@@ -197,26 +199,27 @@ def main(mode, input_sequence=None, sequence_length=30, step=5, batch_size=32, n
         torch.save(model.state_dict(), 'Input/Misc/model.pth')
     elif mode == 'inference':
         model.load_state_dict(torch.load('Input/Misc/model.pth'))
-        predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device)
+        predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device, temperature)
         print(','.join(predicted_chords))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train or run inference on an LSTM model for music generation.')
     parser.add_argument('mode', choices=['train', 'inference'], help='Choose "train" or "inference" mode')
     parser.add_argument('input_sequence', nargs='?', help='Additional input required for inference mode')
+    parser.add_argument('--temperature', type=float, default=1.0, help='Temperature for sampling during inference')
 
     args = parser.parse_args()
 
-    # Parameters to edit for the model training
+    # Changable Parameters
     sequence_length = 30  # Length of each input sequence
     step = 5  # Step size for sliding window
     batch_size = 32  # Batch size for DataLoader
-    num_epochs = 10  # Number of training epochs
-    learning_rate = 0.001  # Learning rate for the optimizer
-    emb_dim = 256  # Embedding dimension
-    hid_dim = 256  # Hidden dimension
-    n_layers = 2  # Number of layers in the LSTM
-    dropout = 0.5  # Dropout rate
+    num_epochs = 10  
+    learning_rate = 0.001  
+    emb_dim = 256  
+    hid_dim = 256  
+    n_layers = 2  
+    dropout = 0.5  
 
     # Depending on the mode, call main with different parameters
     if args.mode == 'train':
@@ -224,4 +227,4 @@ if __name__ == "__main__":
     elif args.mode == 'inference':
         if not args.input_sequence:
             parser.error("Inference mode requires an additional input.")
-        main(args.mode, args.input_sequence, sequence_length=sequence_length, step=step, batch_size=batch_size, num_epochs=num_epochs, learning_rate=learning_rate, emb_dim=emb_dim, hid_dim=hid_dim, n_layers=n_layers, dropout=dropout)
+        main(args.mode, args.input_sequence, sequence_length=sequence_length, step=step, batch_size=batch_size, num_epochs=num_epochs, learning_rate=learning_rate, emb_dim=emb_dim, hid_dim=hid_dim, n_layers=n_layers, dropout=dropout, temperature=args.temperature)

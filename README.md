@@ -15,11 +15,13 @@ Model can be further improved with sufficient compute.
 ## Run on Unix (or Windows Git Bash)
 Before running, ensure that you have added your .wav or .mid file to **"ChordGen/Input"** and that it is the only file in this folder.
 
-Navigate to library location: ```cd __libraryPath__```
+Navigate to library location using: ```cd```
 
 To change the execution permissons: ```chmod +x main.sh```
 
 To **run** the ChordGen flow:  ```./main.sh```
+
+To run the ChordGen flow with temperature(___ = Temperature Value): ```./main.sh ___```
 
 ---
 <details><summary>Training & Inference</summary>
@@ -32,7 +34,7 @@ python model.py train
 ### Inference
 If you wish to use the pretrained script or after you have trained your own model, run inference directly on __NoteSequenceInputString_:
 ```
-python model.py inference __NoteSequenceInputString__
+python model.py inference __NoteSequenceInputString__ --temperature __temp__
 ```
 
 </details>
@@ -52,5 +54,5 @@ python model.py inference __NoteSequenceInputString__
 
 Install these using:
 ```
-pip install __library__
+pip install ____
 ```
