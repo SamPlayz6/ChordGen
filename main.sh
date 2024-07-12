@@ -13,7 +13,7 @@ if [ "$file_count" -ne 1 ]; then
     exit 1
 fi
 
-echo "Found input file: $input_file"
+echo -e "Found input file: $input_file \n"
 
 # Define the paths to the Python scripts
 premodel_script="preModel.py" 
@@ -23,17 +23,17 @@ postmodel_script="postModel.py"
 # Execute preModel 
 echo "Running preModel..."
 output_from_premodel_script=$(python $premodel_script $input_file | tail -n 1)
-echo "Output from preModel: $output_from_premodel_script "
+echo -e "Output from preModel: $output_from_premodel_script \n"
 
 # Execute Model
 echo "Running model..."
 output_from_model_script=$(python $model_script "inference" "$output_from_premodel_script")
 #Splicing the [] from start and end of string
 # output_from_model_script=${output_from_model_script:1:-1}
-echo "Output from Model: $output_from_model_script "
+echo -e "Output from Model: $output_from_model_script \n"
 
 # Execute PostModel
 echo "Running postModel..."
 python $postmodel_script $output_from_premodel_script $output_from_model_script
 
-echo "View Output MIDI: ChordGen\Input\Output\inference_song_midi.mid"
+echo -e "\n\nView Output MIDI: ChordGen\Input\Output\inference_song_midi.mid"

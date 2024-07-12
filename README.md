@@ -13,17 +13,19 @@ Model can be further improved with sufficient compute.
 
 
 ## Run on Unix (or Windows Git Bash)
-Before running, ensure that you have added your .wav or .mid file to "ChordGen/Input" and that it is the only file in this folder.
+Before running, ensure that you have added your .wav or .mid file to **"ChordGen/Input"** and that it is the only file in this folder.
+
+Navigate to library location: ```cd __libraryPath__```
 
 To change the execution permissons: ```chmod +x main.sh```
 
-To run the ChordGen flow:  ```./main.sh```
+To **run** the ChordGen flow:  ```./main.sh```
 
 ---
 <details><summary>Training & Inference</summary>
 
 ### Train
-To train the model on your own data, add your data into the folder "data/TrainingData", insure that the chord and melody files are named according to the name given in the example dataset. Then run the following script to train the model:
+To train the model on your own data, add your data into the folder **"data/TrainingData"**, insure that the chord and melody files are named according to the name given in the example dataset. Then run the following script to train the model:
 ```
 python model.py train
 ```
@@ -41,4 +43,14 @@ python model.py inference __NoteSequenceInputString__
 
 
 ### Dependancies
-*List all libraries
+* argparse
+* mido
+* librosa
+* midiutil
+* csv
+* torch
+
+Install these using:
+```
+pip install __library__
+```

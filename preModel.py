@@ -1,18 +1,7 @@
-import os
 import argparse
-from music21 import converter
 from mido import MidiFile
-
-#--------------------XML to MIDI(Not Part Of Flow)-------------------
-
-def convert_xml_to_midi(xml_file_path, midi_file_path):
-    # Load the MusicXML file
-    score = converter.parse(xml_file_path)
-    
-    # Save as MIDI
-    midi = score.write('midi', fp=midi_file_path)
-    print(f"MIDI file saved as {midi_file_path}")
-
+import librosa
+from midiutil import MIDIFile
 
 
 #--------------MIDI to String(Of notes)-------------
@@ -41,9 +30,6 @@ def midi_to_note_string(midi_file, ticks_per_beat=480):
 
 
 #-----------------AudioToMIDI(Or StringOfNotes)------------
-import librosa
-import numpy as np
-from midiutil import MIDIFile
 
 def wav_to_midi(input_wav, output_midi, min_duration=0.1):
     # Load the audio file
@@ -105,13 +91,6 @@ def wav_to_midi(input_wav, output_midi, min_duration=0.1):
 
 
 if __name__ == "__main__":
-    # try:
-    #     file_path, file_type = get_single_file_from_directory('Input/')
-    #     print("test1")
-    # except Exception as e:
-    #     print(e)
-    #     print("test2")
-
     parser = argparse.ArgumentParser(description='Input File Path + Name')
     parser.add_argument('file_path', nargs='?', help='State file path for file to be processed')
 
