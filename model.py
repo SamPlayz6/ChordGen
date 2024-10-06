@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
-import numpy as np
 import random
 
 # Helper function to read data from CSV files
@@ -15,14 +14,6 @@ def read_from_csv(filename):
         for row in reader:
             data.extend(row)  # Append each cell to a single list
     return ' '.join(data)  # Return a single string containing all data
-
-# def create_tokenizer(data):
-#     tokens = set(data.split())
-#     token_to_id = {token: idx + 1 for idx, token in enumerate(tokens)}
-#     token_to_id['PAD'] = 0
-#     token_to_id['UNK'] = len(token_to_id)
-#     id_to_token = {idx: token for token, idx in token_to_id.items()}
-#     return lambda seq: [token_to_id.get(token, token_to_id['UNK']) for token in seq.split()], token_to_id, id_to_token
 
 def create_tokenizer(data):
     # Assuming data is a single string with space-separated tokens
@@ -46,9 +37,6 @@ def load_data(melody_file, chord_file, sequence_length, step):
     chord_data = read_from_csv(chord_file)
     tokenizer_melody, token_to_id_melody, id_to_token_melody = create_tokenizer(melody_data)
     tokenizer_chord, token_to_id_chord, id_to_token_chord = create_tokenizer(chord_data)
-
-    # print(token_to_id_chord)
-    # print(token_to_id_melody)
 
     tokenized_melodies = tokenizer_melody(melody_data)
     tokenized_chords = tokenizer_chord(chord_data)
@@ -174,46 +162,69 @@ def evaluate(model, val_loader, criterion, device):
     val_acc = 100 * correct / total
     return val_loss, val_acc
 
-def predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device):
+def predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device, temperature=1.0):
     model.eval()
     input_tensor = torch.tensor([[token_to_id_melody.get(note, token_to_id_melody['UNK']) for note in input_sequence.split(',')]], dtype=torch.long).to(device)
 
     with torch.no_grad():
         output = model(input_tensor, torch.zeros((1, input_tensor.size(1)), dtype=torch.long).to(device))
-        predicted_indices = output.argmax(2).squeeze().tolist()
-        predicted_chords = [id_to_token_chord.get(idx, 'UNK') for idx in predicted_indices]
+        output = output / temperature
+        probs = torch.nn.functional.softmax(output, dim=-1)
+        predicted_indices = torch.multinomial(probs.view(-1, probs.shape[-1]), 1).view(probs.shape[:-1]).tolist()
+        predicted_chords = [id_to_token_chord.get(idx, 'UNK') for idx in predicted_indices[0]]
     return predicted_chords
 
-def main(args):
+def main(mode, input_sequence=None, sequence_length=30, step=5, batch_size=32, num_epochs=10, learning_rate=0.001, emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5, temperature=1.0):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    sequence_length = 30  # Length of each input sequence
-    step = 5  # Step size for sliding window
-    # tokenized_melodies, tokenized_chords = load_data('data/melodies.csv', 'data/ExapndedChords.csv', sequence_length, step)
-    tokenized_melodies, tokenized_chords, token_to_id_melody, id_to_token_melody, token_to_id_chord, id_to_token_chord = load_data('data/melodies.csv', 'data/expandedChords.csv', sequence_length, step)
 
+    tokenized_melodies, tokenized_chords, token_to_id_melody, id_to_token_melody, token_to_id_chord, id_to_token_chord = load_data(
+        'data/TrainingData/melodies.csv',
+        'data/TrainingData/expandedChords.csv',
+        sequence_length,
+        step
+    )
 
     dataset = MelodyChordDataset(tokenized_melodies, tokenized_chords)
-    train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
-    val_loader = DataLoader(dataset, batch_size=32)  # Placeholder for actual validation data
+    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(dataset, batch_size=batch_size)  # Placeholder for actual validation data
 
     model = Seq2Seq(
-        Encoder(input_dim=len(token_to_id_melody), emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5),
-        Decoder(output_dim=len(token_to_id_chord), emb_dim=256, hid_dim=256, n_layers=2, dropout=0.5),
+        Encoder(input_dim=len(token_to_id_melody), emb_dim=emb_dim, hid_dim=hid_dim, n_layers=n_layers, dropout=dropout),
+        Decoder(output_dim=len(token_to_id_chord), emb_dim=emb_dim, hid_dim=hid_dim, n_layers=n_layers, dropout=dropout),
         device
     ).to(device)
 
-    if args.mode == 'train':
-        train_model(model, train_loader, val_loader, 1, 0.001, device)  # Train for 10 epochs with a learning rate of 0.001
-        torch.save(model.state_dict(), 'model.pth')
-    elif args.mode == 'inference':
-        model.load_state_dict(torch.load('model.pth'))
-        input_sequence = "C0/6,C1/6,C0/6,B0/5,A0/5,G0/5,F1/5,D0/5,F1/5,E0/5,B0/5,F0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,F1/5,G0/5,A0/5,G0/5,D0/6,B0/5,A0/5,G0/5,D0/5,E0/5,G0/5,F1/5,C1/6,C1/6,C0/6,B0/5,C1/5,D0/5,E0/5,D0/5,D0/5,F1/5,A0/5,C1/6,E0/6,D0/6,D0/5,C1/5,D0/5,E0/6,E0/6,D0/6,B0/5,A0/5,F1/5"
-        predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device)
-        print(len(predicted_chords), " :Predicted Chords: ", predicted_chords)
-        print(len(input_sequence.split(",")), ":Input Melody: ", input_sequence.split(","))
+    if mode == 'train':
+        train_model(model, train_loader, val_loader, num_epochs, learning_rate, device)
+        torch.save(model.state_dict(), 'Input/Misc/model.pth')
+    elif mode == 'inference':
+        model.load_state_dict(torch.load('Input/Misc/model.pth'))
+        predicted_chords = predict(model, input_sequence, token_to_id_melody, id_to_token_chord, device, temperature)
+        print(','.join(predicted_chords))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train or run inference on an LSTM model for music generation.')
     parser.add_argument('mode', choices=['train', 'inference'], help='Choose "train" or "inference" mode')
+    parser.add_argument('input_sequence', nargs='?', help='Additional input required for inference mode')
+    parser.add_argument('--temperature', type=float, default=1.0, help='Temperature for sampling during inference')
+
     args = parser.parse_args()
-    main(args)
+
+    # Changable Parameters
+    sequence_length = 30  # Length of each input sequence
+    step = 5  # Step size for sliding window
+    batch_size = 32  # Batch size for DataLoader
+    num_epochs = 10  
+    learning_rate = 0.001  
+    emb_dim = 256  
+    hid_dim = 256  
+    n_layers = 2  
+    dropout = 0.5  
+
+    # Depending on the mode, call main with different parameters
+    if args.mode == 'train':
+        main(args.mode, sequence_length=sequence_length, step=step, batch_size=batch_size, num_epochs=num_epochs, learning_rate=learning_rate, emb_dim=emb_dim, hid_dim=hid_dim, n_layers=n_layers, dropout=dropout)
+    elif args.mode == 'inference':
+        if not args.input_sequence:
+            parser.error("Inference mode requires an additional input.")
+        main(args.mode, args.input_sequence, sequence_length=sequence_length, step=step, batch_size=batch_size, num_epochs=num_epochs, learning_rate=learning_rate, emb_dim=emb_dim, hid_dim=hid_dim, n_layers=n_layers, dropout=dropout, temperature=args.temperature)
